@@ -4,7 +4,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.2'
+        // ئەڤە دێڕا سەرڕاستکریە کو وەشانا دروستا پلاگینێ بۆ هاتیە دانان
+        classpath 'com.android.tools.build:gradle:8.2.2'
     }
 }
 
