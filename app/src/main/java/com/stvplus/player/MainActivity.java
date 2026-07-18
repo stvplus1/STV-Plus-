@@ -9,7 +9,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.ui.PlayerView;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,15 +27,25 @@ public class MainActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         webView = findViewById(R.id.webview);
 
-        // ئامادەکرنا تایبەتمەندیێن دەنگی بۆ هندێ ئەندرۆید باشتر دەنگی بخوێنیت
+        // ئامادەکرنا تایبەتمەندیێن دەنگی
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build();
 
-        // ئامادەکرنا ExoPlayer
-        player = new ExoPlayer.Builder(this).build();
-        player.setAudioAttributes(audioAttributes, true); // ئەڤ ڕێزە زۆر گرنگە بۆ چارەسەرکرنا کێشەیا دەنگی
+        // **چارەسەریا سەرەکی یا دەنگی**: نەچارکرنا پلەیەرێ بۆ بکارئینانا کۆدەکێن نەرمەکاڵای (Software) ئەگەر مۆبایلێ پشتەڤانی نەکرد
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this)
+                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                .setEnableDecoderFallback(true); // ئەڤە دێ هێلیت دەنگ ب کار بکەڤیت ئەگەر مۆبایل کێشە هەبیت
+
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
+
+        // ئامادەکرنا ExoPlayer ب ڕێکخستنێن نوی ڤە
+        player = new ExoPlayer.Builder(this, renderersFactory)
+                .setTrackSelector(trackSelector)
+                .build();
+                
+        player.setAudioAttributes(audioAttributes, true);
         playerView.setPlayer(player);
 
         // ئامادەکرنا WebView ب شەفافی
