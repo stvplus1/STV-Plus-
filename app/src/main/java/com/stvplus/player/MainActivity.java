@@ -2,6 +2,7 @@ package com.stvplus.player;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -33,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // گازی کرنا کۆدێ فول سکرین کرنێ
+        hideSystemUI();
+
         playerView = findViewById(R.id.player_view);
         webView = findViewById(R.id.webview);
 
@@ -62,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         player.setVolume(1.0f);
         playerView.setPlayer(player);
 
-        // کۆدێ نوی: وەرگرتنا کوالێتی و دەنگان و فرێکرنا وان بۆ HTML
+        // کۆدێ وەرگرتنا کوالێتی و دەنگان و فرێکرنا وان بۆ HTML
         player.addListener(new Player.Listener() {
             @Override
             public void onTracksChanged(Tracks tracks) {
@@ -179,11 +183,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // --- کۆدێن تایبەت ب فول سکرینێ (Immersive Mode) ---
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (player != null) {
-            player.release();
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI();
         }
     }
-}
+
+    private void hideSystemUI() {
+        ViewNormally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
