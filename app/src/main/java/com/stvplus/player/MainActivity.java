@@ -15,6 +15,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.ui.PlayerView;
+import androidx.media3.ui.AspectRatioFrameLayout; // ئەڤە بۆ زوومکرنا شاشەیێ هاتە زێدەکرن
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
@@ -29,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         webView = findViewById(R.id.webview);
 
-        // ئامادەکرنا تایبەتمەندیێن دەنگی
+        // ئامادەکرنا تایبەتمەندیێن دەنگی بۆ چارەسەرکرنا کێشەیا دەنگی
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
@@ -40,13 +41,13 @@ public class MainActivity extends AppCompatActivity {
                 .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
                 .setEnableDecoderFallback(true);
 
-        // **چارەسەریا نوی**: نەچارکرنا پلەیەرێ کو دەنگی کارپێبکەت تەنانەت ئەگەر سیستەم بێژیت پشتەڤانی ناکەم
+        // نەچارکرنا پلەیەرێ کو دەنگی کارپێبکەت
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
         trackSelector.setParameters(trackSelector.buildUponParameters()
                 .setExceedRendererCapabilitiesIfNecessary(true)
                 .setExceedAudioConstraintsIfNecessary(true));
 
-        // **چارەسەریا نوی 2**: باشترکرنا شیکارکرنا فایلێن TS یێن IPTV کو زۆرجار کێشەیا دەنگی دروست دکەن
+        // باشترکرنا شیکارکرنا فایلێن TS یێن IPTV
         DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
                 .setConstantBitrateSeekingEnabled(true);
 
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
                 
         player.setAudioAttributes(audioAttributes, true);
-        player.setVolume(1.0f); // ب دڵنیاییڤە دەنگی بێخە ل سەر بلندترین ئاست
+        player.setVolume(1.0f);
         playerView.setPlayer(player);
 
         // ئامادەکرنا WebView ب شەفافی
@@ -82,6 +83,26 @@ public class MainActivity extends AppCompatActivity {
                 player.setMediaItem(mediaItem);
                 player.prepare();
                 player.play();
+            });
+        }
+
+        // ئەڤ فەنکشنە نویە بۆ گۆڕینا قەبارێ شاشەیێ (نۆڕماڵ، درێژکرن، زووم)
+        @JavascriptInterface
+        public void setResizeMode(int modeIndex) {
+            runOnUiThread(() -> {
+                if (playerView != null) {
+                    switch (modeIndex) {
+                        case 0: // Normal
+                            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+                            break;
+                        case 1: // Stretch (درێژکرن)
+                            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
+                            break;
+                        case 2: // Zoom
+                            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+                            break;
+                    }
+                }
             });
         }
     }
