@@ -6,6 +6,8 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
@@ -23,8 +25,15 @@ public class MainActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         webView = findViewById(R.id.webview);
 
+        // ئامادەکرنا تایبەتمەندیێن دەنگی بۆ هندێ ئەندرۆید باشتر دەنگی بخوێنیت
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build();
+
         // ئامادەکرنا ExoPlayer
         player = new ExoPlayer.Builder(this).build();
+        player.setAudioAttributes(audioAttributes, true); // ئەڤ ڕێزە زۆر گرنگە بۆ چارەسەرکرنا کێشەیا دەنگی
         playerView.setPlayer(player);
 
         // ئامادەکرنا WebView ب شەفافی
