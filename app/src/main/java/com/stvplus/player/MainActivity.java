@@ -11,7 +11,9 @@ import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.ui.PlayerView;
 
 public class MainActivity extends AppCompatActivity {
@@ -33,19 +35,29 @@ public class MainActivity extends AppCompatActivity {
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build();
 
-        // **چارەسەریا سەرەکی یا دەنگی**: نەچارکرنا پلەیەرێ بۆ بکارئینانا کۆدەکێن نەرمەکاڵای (Software) ئەگەر مۆبایلێ پشتەڤانی نەکرد
+        // ڕێکخستنا نەرمەکاڵای بۆ خوێندنا هەر جۆرە دەنگەکێ
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this)
                 .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
-                .setEnableDecoderFallback(true); // ئەڤە دێ هێلیت دەنگ ب کار بکەڤیت ئەگەر مۆبایل کێشە هەبیت
+                .setEnableDecoderFallback(true);
 
+        // **چارەسەریا نوی**: نەچارکرنا پلەیەرێ کو دەنگی کارپێبکەت تەنانەت ئەگەر سیستەم بێژیت پشتەڤانی ناکەم
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
+        trackSelector.setParameters(trackSelector.buildUponParameters()
+                .setExceedRendererCapabilitiesIfNecessary(true)
+                .setExceedAudioConstraintsIfNecessary(true));
 
-        // ئامادەکرنا ExoPlayer ب ڕێکخستنێن نوی ڤە
+        // **چارەسەریا نوی 2**: باشترکرنا شیکارکرنا فایلێن TS یێن IPTV کو زۆرجار کێشەیا دەنگی دروست دکەن
+        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
+                .setConstantBitrateSeekingEnabled(true);
+
+        // دروستکرنا پلەیەرێ ب هەمی هێز و تایبەتمەندیێن نویڤە
         player = new ExoPlayer.Builder(this, renderersFactory)
                 .setTrackSelector(trackSelector)
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(this, extractorsFactory))
                 .build();
                 
         player.setAudioAttributes(audioAttributes, true);
+        player.setVolume(1.0f); // ب دڵنیاییڤە دەنگی بێخە ل سەر بلندترین ئاست
         playerView.setPlayer(player);
 
         // ئامادەکرنا WebView ب شەفافی
