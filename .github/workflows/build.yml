@@ -18,6 +18,17 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    # ئەڤ بەشە نویە: دێ فایلێن کێم یێن ئەندرۆیدی ئۆتۆماتیکی دروست کەت
+    - name: Generate Missing Gradle Files
+      run: |
+        echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
+        echo "rootProject.name = 'STvPlusPlayer'" >> settings.gradle
+        echo "include ':app'" >> settings.gradle
+        echo "plugins { id 'com.android.application' version '8.1.0' apply false }" > build.gradle
+        echo "android.useAndroidX=true" > gradle.properties
+        gradle wrapper --gradle-version 8.2
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
