@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { --accent: #8b5cf6; --bg: #000; --glass: rgba(10, 10, 10, 0.95); }
-        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
+        /* ل ڤێرە باکگراوند بوویە شەفاف بۆ نیشاندانا ڤیدیۆیێ ل پشتەوە */
+        body { margin: 0; background: transparent; color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
         
         .player-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: transparent; display: flex; flex-direction: column; }
         .player-wrapper:fullscreen { width: 100vw; height: 100vh; }
@@ -29,7 +30,7 @@
                 backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
                 transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 border-right: 1px solid rgba(255,255,255,0.1); 
-                display: flex; flex-direction: row; /* بەشکرن بۆ دوو ستوونان */
+                display: flex; flex-direction: row;
             }
             .list-section.active { left: 0; }
         }
@@ -77,7 +78,7 @@
         .group-item:hover { background: rgba(255,255,255,0.05); color: white; }
         .group-item.active { 
             background: rgba(255,255,255,0.1); 
-            border-left: 3px solid var(--accent); /* هێلا لایێ چەپێ بۆ نیشاندانا هەلبژارتنێ */
+            border-left: 3px solid var(--accent);
             color: var(--accent); 
             border-radius: 8px 0 0 8px;
         }
@@ -112,7 +113,6 @@
         .channel-logo img { width: 100%; height: 100%; object-fit: contain; }
         .channel-name { font-size: 15px; font-weight: bold; flex: 1; text-align: left; }
 
-        /* پاشماوەیێ دیزاینێ یێ بەرێ */
         .toast-msg {
             position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(220, 38, 38, 0.9); color: white; padding: 10px 25px;
@@ -379,7 +379,7 @@
         { id: 10, name: "Duhok tv", group: "کوردستان", logo: "https://files.cdn-files-a.com/uploads/278563/400_6a42779e7a2dd.png", url: "https://raw.githubusercontent.com/stvplus1/LOCAL/refs/heads/main/Duhok.m3u8" },
         { id: 267, name: "OSN Hollywood", group: "OSN", logo: "https://files.cdn-files-a.com/uploads/278563/800_6848c288013bd.png", url: "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/OSN/Hollywood.m3u8" },
         { id: 268, name: "Nat Geo ad", group: "OSN", logo: "https://files.cdn-files-a.com/uploads/278563/800_69279cf1e80a5.png", url: "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/NatGeoAD.m3u8" }
-        // تێبینی: من بۆ کورتکرنەوە هندەک کەنال ل ڤێرە کێم کرینە، تو دکاری لێستا خۆ یا تەواو یا کەنالان ل ڤێرە دابنیەڤە
+        // تێبینی: بۆ کورتکرنەوە هندەک کەنال ل ڤێرە من کێم کرینە، تو دکاری لێستا خۆ یا تەواو یا کەنالان ل ڤێرە دابنیەڤە
     ];
 
     let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
@@ -581,28 +581,23 @@
     function loadByIndex(i, close = false) { if(isEditMode) return; const ch = filteredChannels[i]; if(!ch) return; playChannel(ch); if (close) toggleMenu(false); }
     function loadByNumber(n) { if(isEditMode) return; const ch = allChannels.find(c => c.id == n); if(ch) playChannel(ch); }
 
-    // ئەڤەیە گۆڕانکاریا سەرەکی بۆ کارپێکرنا ExoPlayer
     function playChannel(ch) {
         if (ch.url.startsWith('go:')) { window.location.href = ch.url; return; }
         localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
         
-        // پەیوەندی ب ئەندرۆیدێ: ئەگەر فایل دناو ئەپڵیکەیشنێ دا ڤەبیت
         if (window.AndroidPlayer) {
             document.getElementById('videoContainer').style.display = 'none';
             document.getElementById('embedWrapper').style.display = 'none';
             
-            // نیشاندانا زانیاریێن کەنالی ل سەر شاشێ
             document.getElementById('uiNum').innerText = ch.id; 
             document.getElementById('uiName').innerText = ch.name; 
             document.getElementById('uiLogo').querySelector('img').src = ch.logo; 
             showUI();
             
-            // هنارتنا لینکێ بۆ ExoPlayer دناو ئەندرۆیدێ دا
             window.AndroidPlayer.playStream(ch.url, ch.type || 'hls');
             return;
         }
 
-        // کۆدێ ئاسایی بۆ وێبگەڕی یان کۆمپیوتەری (ئەگەر ل دەرڤەی ئەپڵیکەیشنێ ڤەبوو)
         const video = document.getElementById('main-video'); const errorMsg = document.getElementById('error-message'); const loader = document.getElementById('video-loader');
         const videoContainer = document.getElementById('videoContainer'); const embedWrapper = document.getElementById('embedWrapper'); const embedPlayer = document.getElementById('embedPlayer');
 
