@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { --accent: #8b5cf6; --bg: #000; --glass: rgba(10, 10, 10, 0.95); }
-        /* باکگراوند یێ شەفافە بۆ نیشاندانا ڤیدیۆیا ئەندرۆیدێ ل پشتەوە */
         body { margin: 0; background: transparent; color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
         
         .player-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: transparent; display: flex; flex-direction: column; }
@@ -29,7 +28,7 @@
                 backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
                 transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 border-right: 1px solid rgba(255,255,255,0.1); 
-                display: flex; flex-direction: row;
+                display: flex; flex-direction: row; 
             }
             .list-section.active { left: 0; }
         }
@@ -76,7 +75,7 @@
         .group-item:hover { background: rgba(255,255,255,0.05); color: white; }
         .group-item.active { 
             background: rgba(255,255,255,0.1); 
-            border-left: 3px solid var(--accent);
+            border-left: 3px solid var(--accent); 
             color: var(--accent); 
             border-radius: 8px 0 0 8px;
         }
@@ -360,6 +359,8 @@
 
 </div>
 
+
+
 <script>
     // تێبینی: من بۆ کورتکرنەوە هندەک کەنال ل ڤێرە داناینە، دکاری لێستا خۆ یا تەواو یا کەنالان ل ڤێرە دابنیەڤە
     let allChannels = [
@@ -417,7 +418,6 @@
     let fitNames = ['نۆڕماڵ', 'فول سکرین (درێژکرن)', 'زووم'];
     let currentFitIndex = 0;
 
-    // گۆڕاوێن نوی بۆ هەلگرتنا داتایێن ئەندرۆید
     let androidVideoTracks = [];
     let androidAudioTracks = [];
     let selectedQualityStr = "-1_-1";
@@ -467,13 +467,54 @@
     function toggleMoveModal(show) { document.getElementById('moveChOverlay').classList.toggle('active', show); }
     function toggleDeleteModal(show) { document.getElementById('deleteChOverlay').classList.toggle('active', show); }
 
-    function saveNewChannel() { /* ... هەمان کۆد ... */ }
-    function openEditChModal(id) { /* ... هەمان کۆد ... */ }
-    function saveEditedChannel() { /* ... هەمان کۆد ... */ }
-    function openMoveModal(id) { /* ... هەمان کۆد ... */ }
-    function confirmMove() { /* ... هەمان کۆد ... */ }
-    function openDeleteModal(id) { /* ... هەمان کۆد ... */ }
-    function confirmDelete() { /* ... هەمان کۆد ... */ }
+    function saveNewChannel() {
+        const name = document.getElementById('newChName').value.trim();
+        const logo = document.getElementById('newChLogo').value.trim() || 'https://i.imgur.com/Tv1fJ0G.png';
+        const url = document.getElementById('newChUrl').value.trim();
+        if(!name || !url) { alert("تکایە ناڤ و لینکێ کەنالی بنڤیسە!"); return; }
+
+        const newCh = { id: Date.now(), name: name, group: "تایبەت", logo: logo, url: url };
+        allChannels.unshift(newCh); 
+        if(!groups.includes("تایبەت")) groups.splice(2, 0, "تایبەت");
+        
+        document.getElementById('newChName').value = ''; document.getElementById('newChLogo').value = ''; document.getElementById('newChUrl').value = '';
+        saveChannelsState(); toggleAddModal(false); filterByGroup("تایبەت"); toggleMenu(true);
+    }
+
+    function openEditChModal(id) {
+        let ch = allChannels.find(c => c.id === id); if(!ch) return;
+        targetChId = id;
+        document.getElementById('editChName').value = ch.name;
+        document.getElementById('editChLogo').value = ch.logo;
+        document.getElementById('editChUrl').value = ch.url;
+        document.getElementById('editChOverlay').classList.add('active');
+    }
+
+    function saveEditedChannel() {
+        let ch = allChannels.find(c => c.id === targetChId); if(!ch) return;
+        ch.name = document.getElementById('editChName').value.trim();
+        ch.logo = document.getElementById('editChLogo').value.trim() || 'https://i.imgur.com/Tv1fJ0G.png';
+        ch.url = document.getElementById('editChUrl').value.trim();
+        saveChannelsState(); toggleEditChModal(false);
+    }
+
+    function openMoveModal(id) { targetChId = id; document.getElementById('moveChPos').value = ''; document.getElementById('moveChOverlay').classList.add('active'); }
+    function confirmMove() {
+        let pos = parseInt(document.getElementById('moveChPos').value);
+        if(isNaN(pos) || pos < 1) { alert("ژمارەی دروست بنووسە!"); return; }
+        let globalIdx = allChannels.findIndex(c => c.id === targetChId); if (globalIdx === -1) return;
+        let ch = allChannels.splice(globalIdx, 1)[0];
+        let newIdx = pos - 1; if (newIdx > allChannels.length) newIdx = allChannels.length;
+        allChannels.splice(newIdx, 0, ch);
+        saveChannelsState(); toggleMoveModal(false);
+    }
+
+    function openDeleteModal(id) { targetChId = id; document.getElementById('deleteChOverlay').classList.add('active'); }
+    function confirmDelete() {
+        allChannels = allChannels.filter(c => c.id !== targetChId);
+        favChannels = favChannels.filter(id => id !== targetChId); localStorage.setItem('favChannels', JSON.stringify(favChannels));
+        saveChannelsState(); toggleDeleteModal(false);
+    }
 
     function renderGroups() {
         const bar = document.getElementById('groupsBar');
@@ -515,7 +556,7 @@
     function playChannel(ch) {
         if (ch.url.startsWith('go:')) { window.location.href = ch.url; return; }
         localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
-        selectedQualityStr = "-1_-1"; selectedAudioStr = "-1_-1"; // ڕیسێتکرنا کوالێتی بۆ ئۆتۆ
+        selectedQualityStr = "-1_-1"; selectedAudioStr = "-1_-1"; 
         
         if (window.AndroidPlayer) {
             document.getElementById('videoContainer').style.display = 'none';
@@ -555,8 +596,15 @@
         document.getElementById('uiNum').innerText = ch.id; document.getElementById('uiName').innerText = ch.name; document.getElementById('uiLogo').querySelector('img').src = ch.logo; showUI();
     }
 
-    function toggleFav() { /* ... */ }
-    function updateFavIcon() { /* ... */ }
+    function toggleFav() {
+        if (!currentPlayingChannel) return; const chId = currentPlayingChannel.id; const index = favChannels.indexOf(chId);
+        if (index > -1) { favChannels.splice(index, 1); } else { favChannels.push(chId); } localStorage.setItem('favChannels', JSON.stringify(favChannels)); updateFavIcon(); if (currentGroup === "دڵخواز") filterByGroup("دڵخواز");
+    }
+
+    function updateFavIcon() {
+        if (!currentPlayingChannel) return; const btn = document.getElementById('favBtn'); const icon = btn.querySelector('i');
+        if (favChannels.includes(currentPlayingChannel.id)) { icon.className = 'fa-solid fa-heart'; icon.style.color = 'var(--accent)'; } else { icon.className = 'fa-regular fa-heart'; icon.style.color = 'white'; }
+    }
 
     function toggleMenu(force) {
         isMenuOpen = force !== undefined ? force : !isMenuOpen; document.getElementById('sideMenu').classList.toggle('active', isMenuOpen);
@@ -566,8 +614,8 @@
         } else { showUI(); }
     }
 
-    function moveFocus(dir) { /* ... */ }
-    function updateFocus() { /* ... */ }
+    function moveFocus(dir) { const items = document.querySelectorAll('.channel-item'); if (items.length === 0) return; items[focusedIndex].classList.remove('focused'); focusedIndex = (focusedIndex + dir + items.length) % items.length; items[focusedIndex].classList.add('focused'); updateFocus(); }
+    function updateFocus() { const items = document.querySelectorAll('.channel-item'); if (items[focusedIndex]) { items[focusedIndex].scrollIntoView({ block: 'center', behavior: 'auto' }); } }
 
     function toggleQuality(show) {
         if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe)) { alert("کوالێتی بۆ ڤی کەنالی نە گونجایە"); return; }
@@ -610,7 +658,7 @@
         toggleQuality(false);
     }
 
-    function moveQualityFocus(dir) { /* ... */ }
+    function moveQualityFocus(dir) { if (qualityLevelsCount === 0) return; focusedQualityIndex = (focusedQualityIndex + dir + qualityLevelsCount) % qualityLevelsCount; updateQualityFocus(); }
     function updateQualityFocus() { const items = document.querySelectorAll('.quality-item'); items.forEach((item, idx) => { if (idx === focusedQualityIndex) { item.classList.add('focused'); item.scrollIntoView({ block: 'nearest', behavior: 'auto' }); } else item.classList.remove('focused'); }); }
     function selectFocusedQuality() { const items = document.querySelectorAll('.quality-item'); if (items[focusedQualityIndex]) items[focusedQualityIndex].click(); }
 
@@ -652,7 +700,7 @@
         if(window.hlsPlayer) window.hlsPlayer.audioTrack = val; toggleAudio(false); 
     }
 
-    function moveAudioFocus(dir) { /* ... */ }
+    function moveAudioFocus(dir) { if (audioTracksCount === 0) return; focusedAudioIndex = (focusedAudioIndex + dir + audioTracksCount) % audioTracksCount; updateAudioFocus(); }
     function updateAudioFocus() { const items = document.querySelectorAll('.audio-item'); items.forEach((item, idx) => { if (idx === focusedAudioIndex) { item.classList.add('focused'); item.scrollIntoView({ block: 'nearest', behavior: 'auto' }); } else item.classList.remove('focused'); }); }
     function selectFocusedAudio() { const items = document.querySelectorAll('.audio-item'); if (items[focusedAudioIndex]) items[focusedAudioIndex].click(); }
 
@@ -666,21 +714,37 @@
         uiTimer = setTimeout(() => { if(!isMenuOpen) { ui.classList.remove('visible'); isControlFocused = false; updateControlFocus(); } }, 5000);
     }
 
+    // گۆڕانکاری بۆ فول سکرین ب ڕێکا ئەندرۆیدێ
     function toggleFullScreen() {
-        const elem = document.getElementById("mainWrapper");
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) { if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log(err)); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } } 
-        else { if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); } }
+        if (window.AndroidPlayer && window.AndroidPlayer.toggleNativeFullScreen) {
+            window.AndroidPlayer.toggleNativeFullScreen();
+        } else {
+            const elem = document.getElementById("mainWrapper");
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) { 
+                if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log(err)); } 
+                else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } 
+            } else { 
+                if (document.exitFullscreen) { document.exitFullscreen(); } 
+                else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); } 
+            }
+        }
+    }
+
+    // گۆڕانکاری بۆ ئۆتۆماتیکی
+    function autoFullScreen() {
+        if (window.AndroidPlayer && window.AndroidPlayer.toggleNativeFullScreen) {
+            // بێدەنگ دبیت، ب تنێ ب دوگمەیی دێ کارکەت بۆ ئەندرۆیدێ
+        } else {
+            const elem = document.getElementById("mainWrapper");
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log(err)); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+            }
+        }
     }
     
     function changeGroup(dir) { let idx = groups.indexOf(currentGroup); idx = (idx + dir + groups.length) % groups.length; filterByGroup(groups[idx]); }
     function navigateRelative(dir) { if(filteredChannels.length === 0) return; let idx = filteredChannels.findIndex(c => c.id === currentPlayingChannel.id); if(idx === -1) idx = 0; let next = (idx + dir + filteredChannels.length) % filteredChannels.length; loadByIndex(next, false); }
 
-    function autoFullScreen() {
-        const elem = document.getElementById("mainWrapper");
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log(err)); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
-        }
-    }
     document.body.addEventListener('touchstart', autoFullScreen, { once: true });
     document.body.addEventListener('click', autoFullScreen, { once: true });
 
@@ -688,6 +752,9 @@
         const keyCode = e.keyCode; const key = e.key; const isBackKey = [8, 27, 4, 10009, 461].includes(keyCode);
         if (isBackKey) {
             const addOverlay = document.getElementById('addChOverlay'); if (addOverlay && addOverlay.classList.contains('active')) { toggleAddModal(false); e.preventDefault(); return; }
+            const editOverlay = document.getElementById('editChOverlay'); if (editOverlay && editOverlay.classList.contains('active')) { toggleEditChModal(false); e.preventDefault(); return; }
+            const moveOverlay = document.getElementById('moveChOverlay'); if (moveOverlay && moveOverlay.classList.contains('active')) { toggleMoveModal(false); e.preventDefault(); return; }
+            const delOverlay = document.getElementById('deleteChOverlay'); if (delOverlay && delOverlay.classList.contains('active')) { toggleDeleteModal(false); e.preventDefault(); return; }
             if (isQualityOpen) { toggleQuality(false); e.preventDefault(); return; } if (isAudioOpen) { toggleAudio(false); e.preventDefault(); return; } if (isControlFocused) { isControlFocused = false; updateControlFocus(); e.preventDefault(); return; } if (isMenuOpen) { toggleMenu(false); e.preventDefault(); return; }
         }
         if (/^\d$/.test(key)) { clearTimeout(numTimer); numInput += key; const box = document.getElementById('numBox'); box.innerText = numInput; box.style.display = "block"; numTimer = setTimeout(() => { loadByNumber(parseInt(numInput)); numInput = ""; box.style.display = "none"; }, 1500); return; }
@@ -710,11 +777,12 @@
     document.getElementById('touchLayer').addEventListener('touchend', function(e) { clearTimeout(touchTimeout); showUI(); if (!isLongPress) { let now = new Date().getTime(); if ((now - lastTap < 300) && (now - lastTap > 0)) toggleFullScreen(); lastTap = now; } });
     document.getElementById('touchLayer').addEventListener('click', function(e) { if (!isLongPress) showUI(); });
     
+    window.addEventListener('offline', function() { document.getElementById('video-loader').style.display = 'none'; document.getElementById('error-message').style.display = 'block'; });
+    window.addEventListener('online', function() { if (currentPlayingChannel) playChannel(currentPlayingChannel); else if (allChannels.length > 0) loadByIndex(0); });
+    
     initApp();
 </script>
-
-
-        
-    
 </body>
 </html>
+
+    
