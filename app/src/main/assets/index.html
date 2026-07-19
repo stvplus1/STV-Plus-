@@ -214,7 +214,6 @@
         .cancel-btn { background: #333; color: white; } .cancel-btn:hover { background: #444; }
     </style>
 </head>
-
 <body>
 
 <div class="toast-msg" id="errorToast">کێشەیەک د ڤەکرنا کەنالی دا هەیە</div>
@@ -222,7 +221,6 @@
 <div class="num-indicator" id="numBox"></div>
 
 <div class="player-wrapper" id="mainWrapper">
-    
     <div class="video-section">
         <div style="position:absolute; width:100%; height:100%; z-index:5;" id="touchLayer"></div>
         
@@ -260,12 +258,10 @@
     </div>
 
     <div class="list-section side-menu" id="sideMenu" dir="ltr">
-        
         <div class="groups-sidebar">
             <div class="sidebar-header">CATEGORIES</div>
             <div class="groups-container" id="groupsBar"></div>
         </div>
-        
         <div class="channels-area">
             <div class="menu-header">
                 <h2><i class="fa-solid fa-bars-staggered"></i> <span id="currentGroupName">هەمی</span></h2>
@@ -280,7 +276,6 @@
             </div>
             <div class="channel-list" id="channelList"></div>
         </div>
-
     </div>
 
     <div class="add-ch-overlay" id="addChOverlay" onclick="toggleAddModal(false)">
@@ -356,20 +351,15 @@
             <div class="audio-list" id="audioList"></div>
         </div>
     </div>
-
 </div>
 
 
 
 <script>
-    // تێبینی: من بۆ کورتکرنەوە هندەک کەنال ل ڤێرە داناینە، دکاری لێستا خۆ یا تەواو یا کەنالان ل ڤێرە دابنیەڤە
-    let allChannels = [
-        { id: 142, name: "Quran Tv", group: "کوردستان", logo: "https://files.cdn-files-a.com/uploads/278563/800_68aeea3cabe7a.png", url: "https://raw.githubusercontent.com/stvplus1/KURDISH/refs/heads/main/Quran.m3u8" },
-        { id: 1, name: "ST✓ One", group: "کوردستان", logo: "https://files.cdn-files-a.com/uploads/278563/800_6950fef58351e.png", url: "https://raw.githubusercontent.com/stvplus1/LOCAL/refs/heads/main/StvMovies.m3u8" },
-        { id: 2, name: "WAAR HD", group: "کوردستان", logo: "https://upload.wikimedia.org/wikipedia/commons/d/d2/WAAR_TV_HD.png", url: "https://raw.githubusercontent.com/stvplus1/KURDISH/refs/heads/main/WaarHD.m3u8" },
-        { id: 3, name: "Kurdistan TV", group: "کوردستان", logo: "https://upload.wikimedia.org/wikipedia/ckb/f/fc/Kurdistan_tv_logo.png", url: "https://raw.githubusercontent.com/stvplus1/KURDISH/refs/heads/main/KurdistanTv.m3u8" },
-        { id: 267, name: "OSN Hollywood", group: "OSN", logo: "https://files.cdn-files-a.com/uploads/278563/800_6848c288013bd.png", url: "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/OSN/Hollywood.m3u8" }
-    ];
+    // تێبینی زۆر گرنگ: لینکێ خۆ یێ Raw یێ فایلێ channels.json ل خوارێ دابنێ
+    const ONLINE_CHANNELS_URL = "لینکێ_تە_یێ_کۆپی_کری_ل_ڤێرە_دابنێ";
+
+    let allChannels = []; // דێ ڤالا بیت و ژ ئینتەرنێتێ هێتە پڕکرن
 
     let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
     
@@ -378,25 +368,7 @@
         "تورکی": "fa-moon", "عەرەبی": "fa-globe", "ئاینی": "fa-book-quran", "منداڵان": "fa-child-reaching",
         "وەرزشی": "fa-futbol", "OSN": "fa-film"
     };
-    
-    let savedChannelsData = localStorage.getItem('allChannelsData');
-    if (savedChannelsData) {
-        allChannels = JSON.parse(savedChannelsData);
-        let hasCustom = allChannels.some(c => c.group === "تایبەت");
-        if(hasCustom && !groups.includes("تایبەت")) groups.splice(2, 0, "تایبەت");
-    } else {
-        let customChannels = JSON.parse(localStorage.getItem('customChannels')) || [];
-        if(customChannels.length > 0) {
-            allChannels = [...customChannels, ...allChannels];
-            if(!groups.includes("تایبەت")) groups.splice(2, 0, "تایبەت");
-        }
-    }
 
-    function saveChannelsState() {
-        localStorage.setItem('allChannelsData', JSON.stringify(allChannels));
-        filterByGroup(currentGroup);
-    }
-    
     let filteredChannels = [];
     let currentGroup = "هەمی", isMenuOpen = false, isQualityOpen = false, isAudioOpen = false;
     let uiTimer, focusedIndex = 0;
@@ -431,6 +403,43 @@
         } catch(e) {}
     };
 
+    // فەنکشنی ڕاکێشانا کەنالان ژ ئینتەرنێتێ
+    async function loadOnlineChannels() {
+        try {
+            let response = await fetch(ONLINE_CHANNELS_URL + '?t=' + new Date().getTime());
+            if (!response.ok) throw new Error("Network response was not ok");
+            
+            let data = await response.json();
+            allChannels = data;
+            
+            localStorage.setItem('savedOnlineChannels', JSON.stringify(data));
+        } catch (error) {
+            console.error("Error loading online channels:", error);
+            let saved = localStorage.getItem('savedOnlineChannels');
+            if (saved) {
+                allChannels = JSON.parse(saved);
+                showToast("کەنالێن ئۆفلاین هاتنە لۆدکرن");
+            } else {
+                showToast("کێشەیەک هەیە د ڕاکێشانا کەنالان دا، ئەنتەرنێتێ کۆنترۆل بکە", true);
+            }
+        }
+
+        let customChannels = JSON.parse(localStorage.getItem('customChannels')) || [];
+        if(customChannels.length > 0) {
+            allChannels = [...customChannels, ...allChannels];
+            if(!groups.includes("تایبەت")) groups.splice(2, 0, "تایبەت");
+        }
+
+        initApp();
+    }
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById(isError ? 'errorToast' : 'infoToast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
     function initApp() {
         renderGroups();
         filterByGroup("هەمی");
@@ -454,11 +463,7 @@
             video.classList.add(fitModes[currentFitIndex]);
             embed.classList.add(fitModes[currentFitIndex]);
         }
-        const toast = document.getElementById('infoToast');
-        toast.innerText = "قەبارێ شاشەیێ: " + fitNames[currentFitIndex];
-        toast.classList.add('show');
-        clearTimeout(window.toastTimer);
-        window.toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        showToast("قەبارێ شاشەیێ: " + fitNames[currentFitIndex]);
     }
 
     function toggleEditMode() { isEditMode = !isEditMode; renderChannels(); }
@@ -548,6 +553,10 @@
                 </div>`;
         }).join('');
         if(isMenuOpen) updateFocus();
+    }
+
+    function saveChannelsState() {
+        filterByGroup(currentGroup);
     }
 
     function loadByIndex(i, close = false) { if(isEditMode) return; const ch = filteredChannels[i]; if(!ch) return; playChannel(ch); if (close) toggleMenu(false); }
@@ -714,7 +723,6 @@
         uiTimer = setTimeout(() => { if(!isMenuOpen) { ui.classList.remove('visible'); isControlFocused = false; updateControlFocus(); } }, 5000);
     }
 
-    // گۆڕانکاری بۆ فول سکرین ب ڕێکا ئەندرۆیدێ
     function toggleFullScreen() {
         if (window.AndroidPlayer && window.AndroidPlayer.toggleNativeFullScreen) {
             window.AndroidPlayer.toggleNativeFullScreen();
@@ -730,10 +738,9 @@
         }
     }
 
-    // گۆڕانکاری بۆ ئۆتۆماتیکی
     function autoFullScreen() {
         if (window.AndroidPlayer && window.AndroidPlayer.toggleNativeFullScreen) {
-            // بێدەنگ دبیت، ب تنێ ب دوگمەیی دێ کارکەت بۆ ئەندرۆیدێ
+            // ئەندرۆید ب خۆ دێ کارکەت ب ڕێکا دوگمەیێ
         } else {
             const elem = document.getElementById("mainWrapper");
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -780,9 +787,15 @@
     window.addEventListener('offline', function() { document.getElementById('video-loader').style.display = 'none'; document.getElementById('error-message').style.display = 'block'; });
     window.addEventListener('online', function() { if (currentPlayingChannel) playChannel(currentPlayingChannel); else if (allChannels.length > 0) loadByIndex(0); });
     
-    initApp();
+    // دەستپێکرنا پرۆسەیێ ب ڕاکێشانا کەنالان ب شێوەیێ ئۆنلاین
+    loadOnlineChannels();
 </script>
 </body>
 </html>
+
+
+
+
+
 
     
