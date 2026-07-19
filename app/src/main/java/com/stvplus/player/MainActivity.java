@@ -10,18 +10,28 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
-import androidx.media3.common.*;
+
+// Media3 Imports
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.Player;
+import androidx.media3.common.Tracks;
+import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.MediaItem.DrmConfiguration;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.dash.DashMediaSource;
+import androidx.media3.exoplayer.hls.HlsMediaSource;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
-import androidx.media3.exoplayer.source.hls.HlsMediaSource;
+import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -124,14 +134,12 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 
-                // زێدەکرنا Referer بۆ KurdMax و یێن دی
                 if (referer != null && !referer.isEmpty()) {
                     httpDataSourceFactory.setDefaultRequestProperties(java.util.Collections.singletonMap("Referer", referer));
                 }
 
                 MediaItem.Builder mediaItemBuilder = new MediaItem.Builder().setUri(url);
 
-                // زێدەکرنا DRM بۆ کەنالێن وەکو StarzPlay
                 if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
                     String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + hexToBase64Url(drmKey) + "\",\"kid\":\"" + hexToBase64Url(drmKeyId) + "\"}],\"type\":\"temporary\"}";
                     String licenseUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.getBytes(), android.util.Base64.NO_WRAP);
@@ -143,9 +151,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 MediaItem mediaItem = mediaItemBuilder.build();
-                androidx.media3.exoplayer.source.MediaSource mediaSource;
+                MediaSource mediaSource;
 
-                // جیاکرنا DASH و HLS
                 if (url.contains(".mpd") || "dash".equalsIgnoreCase(type)) {
                     mediaSource = new DashMediaSource.Factory(httpDataSourceFactory).createMediaSource(mediaItem);
                 } else {
