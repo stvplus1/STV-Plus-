@@ -221,7 +221,6 @@
 <div class="num-indicator" id="numBox"></div>
 
 <div class="player-wrapper" id="mainWrapper">
-    
     <div class="video-section">
         <div style="position:absolute; width:100%; height:100%; z-index:5;" id="touchLayer"></div>
         
@@ -357,8 +356,9 @@
 
 
 
-    <script>
-    // لینکێ تایبەت یێ کەناڵان
+
+<script>
+    // لینکێ تە یێ ئۆنلاین بۆ کەنالان
     const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
 
     let allChannels = []; 
@@ -580,7 +580,6 @@
             return;
         }
 
-        // پاشماوەی کۆدێ لێدانێ بۆ وێبگەڕێ وەکو خۆ
         const video = document.getElementById('main-video'); const errorMsg = document.getElementById('error-message'); const loader = document.getElementById('video-loader');
         const videoContainer = document.getElementById('videoContainer'); const embedWrapper = document.getElementById('embedWrapper'); const embedPlayer = document.getElementById('embedPlayer');
         if (window.hlsPlayer) { window.hlsPlayer.destroy(); window.hlsPlayer = null; }
@@ -595,7 +594,6 @@
             if (ch.type === 'dash') {
                 shaka.polyfill.installAll(); window.shakaPlayer = new shaka.Player(video);
                 
-                // زێدەکرنا DRM بۆ Shaka Player ل سەر وێبگەڕێ
                 if (ch.drmKeyId && ch.drmKey) {
                     window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
                 }
@@ -796,8 +794,11 @@
     window.addEventListener('offline', function() { document.getElementById('video-loader').style.display = 'none'; document.getElementById('error-message').style.display = 'block'; });
     window.addEventListener('online', function() { if (currentPlayingChannel) playChannel(currentPlayingChannel); else if (allChannels.length > 0) loadByIndex(0); });
     
-    // دەستپێکرن
+    // دەستپێکرنا بەرنامەی و ڕاکێشانا کەنالان ب ئۆنلاین
     loadOnlineChannels();
 </script>
 </body>
 </html>
+
+
+    
