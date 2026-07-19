@@ -83,13 +83,16 @@
     "logo": "https://kurdmaxcms.com/asset/image/page/1-www.kurdmax.tv_1.png",
     "url": "go:kurdmax1"
   },
+  [
   {
-    "id": 13,
+    "id": 12,
     "name": "kurmax sorani",
     "group": "کوردستان",
     "logo": "https://kurdmaxcms.com/asset/image/page/1-www.kurdmax.tv_1.png",
-    "url": "go:kurdmax2"
-  },
+    "url": "https://stream.kurdmax.tv/app/kurdmax-sorani1/medialist_917977731947844006_hls.m3u8",
+    "referer": "https://www.kurdmax.tv/"
+  }
+]
   {
     "id": 14,
     "name": "kurmax show Badînî",
