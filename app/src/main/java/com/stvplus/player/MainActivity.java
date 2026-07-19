@@ -11,9 +11,13 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.media3.common.*;
+import androidx.media3.common.MediaItem.DrmConfiguration;
+import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.dash.DashMediaSource;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.exoplayer.source.hls.HlsMediaSource;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
@@ -25,13 +29,12 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private PlayerView playerView;
     private ExoPlayer player;
-    private boolean isFullScreen = false; // گۆڕاوەک بۆ زانینا ڕەوشا شاشەیێ
+    private boolean isFullScreen = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // ڕێپێدان ب ڤیدیۆیێ کو هەتا ل جهێ کامیرەیێ (Notch) ژی کار بکەت
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
             layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
@@ -115,15 +118,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class WebAppInterface {
+        
         @JavascriptInterface
-        public void playStream(String url, String type) {
+        public void playStream(String url, String type, String referer, String drmKeyId, String drmKey) {
             runOnUiThread(() -> {
-                player.setMediaItem(MediaItem.fromUri(url));
+                DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
+                
+                // زێدەکرنا Referer بۆ KurdMax و یێن دی
+                if (referer != null && !referer.isEmpty()) {
+                    httpDataSourceFactory.setDefaultRequestProperties(java.util.Collections.singletonMap("Referer", referer));
+                }
+
+                MediaItem.Builder mediaItemBuilder = new MediaItem.Builder().setUri(url);
+
+                // زێدەکرنا DRM بۆ کەنالێن وەکو StarzPlay
+                if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
+                    String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + hexToBase64Url(drmKey) + "\",\"kid\":\"" + hexToBase64Url(drmKeyId) + "\"}],\"type\":\"temporary\"}";
+                    String licenseUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.getBytes(), android.util.Base64.NO_WRAP);
+                    
+                    DrmConfiguration drmConfig = new DrmConfiguration.Builder(C.CLEARKEY_UUID)
+                            .setLicenseUri(licenseUri)
+                            .build();
+                    mediaItemBuilder.setDrmConfiguration(drmConfig);
+                }
+
+                MediaItem mediaItem = mediaItemBuilder.build();
+                androidx.media3.exoplayer.source.MediaSource mediaSource;
+
+                // جیاکرنا DASH و HLS
+                if (url.contains(".mpd") || "dash".equalsIgnoreCase(type)) {
+                    mediaSource = new DashMediaSource.Factory(httpDataSourceFactory).createMediaSource(mediaItem);
+                } else {
+                    mediaSource = new HlsMediaSource.Factory(httpDataSourceFactory).createMediaSource(mediaItem);
+                }
+
+                player.setMediaSource(mediaSource);
                 player.prepare();
                 player.play();
             });
         }
         
+        private String hexToBase64Url(String hex) {
+            byte[] bytes = new byte[hex.length() / 2];
+            for (int i = 0; i < bytes.length; i++) {
+                bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+            }
+            return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
+        }
+
         @JavascriptInterface
         public void setResizeMode(int modeIndex) {
             runOnUiThread(() -> {
@@ -135,13 +177,11 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // ئەڤە فەنکشنی نوی یە بۆ ڤەشارتنا شەبەکێ و دەمژمێرێ
         @JavascriptInterface
         public void toggleNativeFullScreen() {
             runOnUiThread(() -> {
                 WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
                 if (controller != null) {
-                    // ئەگەر دەست ل شاشێ دا بهێتە خوارێ دێ هێل دیار بن و پاشان ئۆتۆماتیکی بەرزە بنەڤە
                     controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
                     
                     if (isFullScreen) {
