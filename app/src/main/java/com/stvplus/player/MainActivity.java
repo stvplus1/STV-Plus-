@@ -2,17 +2,15 @@ package com.stvplus.player;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.media3.common.AudioAttributes;
-import androidx.media3.common.C;
-import androidx.media3.common.Format;
-import androidx.media3.common.MediaItem;
-import androidx.media3.common.Player;
-import androidx.media3.common.TrackSelectionOverride;
-import androidx.media3.common.Tracks;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.media3.common.*;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
@@ -27,19 +25,25 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private PlayerView playerView;
     private ExoPlayer player;
+    private boolean isFullScreen = false; // گۆڕاوەک بۆ زانینا ڕەوشا شاشەیێ
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        
+        // ڕێپێدان ب ڤیدیۆیێ کو هەتا ل جهێ کامیرەیێ (Notch) ژی کار بکەت
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
+            layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(layoutParams);
+        }
 
+        setContentView(R.layout.activity_main);
         playerView = findViewById(R.id.player_view);
         webView = findViewById(R.id.webview);
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                .setUsage(C.USAGE_MEDIA)
-                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                .build();
+                .setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build();
 
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this)
                 .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
@@ -50,19 +54,14 @@ public class MainActivity extends AppCompatActivity {
                 .setExceedRendererCapabilitiesIfNecessary(true)
                 .setExceedAudioConstraintsIfNecessary(true));
 
-        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
-                .setConstantBitrateSeekingEnabled(true);
-
         player = new ExoPlayer.Builder(this, renderersFactory)
                 .setTrackSelector(trackSelector)
-                .setMediaSourceFactory(new DefaultMediaSourceFactory(this, extractorsFactory))
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(this, new DefaultExtractorsFactory()))
                 .build();
                 
         player.setAudioAttributes(audioAttributes, true);
-        player.setVolume(1.0f);
         playerView.setPlayer(player);
 
-        // کۆدێ نوی: وەرگرتنا کوالێتی و دەنگان و فرێکرنا وان بۆ HTML
         player.addListener(new Player.Listener() {
             @Override
             public void onTracksChanged(Tracks tracks) {
@@ -119,28 +118,43 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void playStream(String url, String type) {
             runOnUiThread(() -> {
-                MediaItem mediaItem = MediaItem.fromUri(url);
-                player.setMediaItem(mediaItem);
+                player.setMediaItem(MediaItem.fromUri(url));
                 player.prepare();
                 player.play();
             });
         }
-
-        // کۆدێ زوومکرنێ
+        
         @JavascriptInterface
         public void setResizeMode(int modeIndex) {
             runOnUiThread(() -> {
                 if (playerView != null) {
-                    switch (modeIndex) {
-                        case 0: playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT); break;
-                        case 1: playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL); break;
-                        case 2: playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM); break;
+                    playerView.setResizeMode(modeIndex == 1 ? AspectRatioFrameLayout.RESIZE_MODE_FILL : 
+                                             modeIndex == 2 ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM : 
+                                             AspectRatioFrameLayout.RESIZE_MODE_FIT);
+                }
+            });
+        }
+
+        // ئەڤە فەنکشنی نوی یە بۆ ڤەشارتنا شەبەکێ و دەمژمێرێ
+        @JavascriptInterface
+        public void toggleNativeFullScreen() {
+            runOnUiThread(() -> {
+                WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                if (controller != null) {
+                    // ئەگەر دەست ل شاشێ دا بهێتە خوارێ دێ هێل دیار بن و پاشان ئۆتۆماتیکی بەرزە بنەڤە
+                    controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    
+                    if (isFullScreen) {
+                        controller.show(WindowInsetsCompat.Type.systemBars());
+                        isFullScreen = false;
+                    } else {
+                        controller.hide(WindowInsetsCompat.Type.systemBars());
+                        isFullScreen = true;
                     }
                 }
             });
         }
 
-        // کۆدێ وەرگرتنا گۆڕانکاریا کوالێتیێ ژ HTML
         @JavascriptInterface
         public void setVideoQuality(int groupIndex, int trackIndex) {
             runOnUiThread(() -> {
@@ -159,7 +173,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // کۆدێ وەرگرتنا گۆڕانکاریا دەنگی ژ HTML
         @JavascriptInterface
         public void setAudioTrack(int groupIndex, int trackIndex) {
             runOnUiThread(() -> {
