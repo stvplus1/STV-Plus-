@@ -83,30 +83,21 @@
     "logo": "https://kurdmaxcms.com/asset/image/page/1-www.kurdmax.tv_1.png",
     "url": "go:kurdmax1"
   },
-  [
   {
-    "id": 12,
+    "id": 13,
     "name": "kurmax sorani",
     "group": "کوردستان",
     "logo": "https://kurdmaxcms.com/asset/image/page/1-www.kurdmax.tv_1.png",
     "url": "https://stream.kurdmax.tv/app/kurdmax-sorani1/medialist_917977731947844006_hls.m3u8",
     "referer": "https://www.kurdmax.tv/"
-  }
-]
+  },
   {
     "id": 14,
     "name": "kurmax show Badînî",
     "group": "کوردستان",
     "logo": "https://static1.s123-cdn-static-a.com/uploads/278563/400_622b732b6a491.png",
     "url": "http://max4kcdn.com:8080//live/5mRAF74MYwfjaxc9VRmRAF74MY9/5mRAF74MY9wfjaxc9VR5mRAF74MYwfjaxc9VR/27808.m3u8"
-  },
-  {
-    "id": 15,
-    "name": "kurmax show sorani",
-    "group": "کوردستان",
-    "logo": "https://static1.s123-cdn-static-a.com/uploads/278563/400_622b732b6a491.png",
-    "url": "http://max4kcdn.com:8080//live/5mRAF74MYwfjaxc9VRmRAF74MY9/5mRAF74MY9wfjaxc9VR5mRAF74MYwfjaxc9VR/27808.m3u8"
-  },
+  }
   {
     "id": 16,
     "name": "TRT KURDÎ",
