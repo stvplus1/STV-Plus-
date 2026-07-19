@@ -1,0 +1,23 @@
+[
+  {
+    "id": 142,
+    "name": "Quran Tv",
+    "group": "کوردستان",
+    "logo": "https://files.cdn-files-a.com/uploads/278563/800_68aeea3cabe7a.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/KURDISH/refs/heads/main/Quran.m3u8"
+  },
+  {
+    "id": 1,
+    "name": "ST✓ One",
+    "group": "کوردستان",
+    "logo": "https://files.cdn-files-a.com/uploads/278563/800_6950fef58351e.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/LOCAL/refs/heads/main/StvMovies.m3u8"
+  },
+  {
+    "id": 2,
+    "name": "WAAR HD",
+    "group": "کوردستان",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/d/d2/WAAR_TV_HD.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/KURDISH/refs/heads/main/WaarHD.m3u8"
+  }
+]
