@@ -363,6 +363,8 @@
 
 
 
+
+
 <script>
     const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
 
@@ -390,6 +392,9 @@
     let targetChId = null;
     window.hlsPlayer = null;
     window.shakaPlayer = null;
+    
+    // تایمەری ئۆتۆماتیکی بۆ دوبارە کارپێکرنێ
+    let autoRetryTimer = null;
 
     let fitModes = ['vid-normal', 'vid-stretch', 'vid-zoom'];
     let fitNames = ['نۆڕماڵ', 'فول سکرین (درێژکرن)', 'زووم'];
@@ -562,6 +567,10 @@
 
     function playChannel(ch) {
         if (ch.url.startsWith('go:')) { window.location.href = ch.url; return; }
+        
+        // پاقژکرنا تایمەری بەرێ دا کو چەندین جار تێکەل نەبیت
+        clearTimeout(autoRetryTimer);
+        
         localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
         selectedQualityStr = "-1_-1"; selectedAudioStr = "-1_-1"; 
         
@@ -602,14 +611,30 @@
                     window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
                 }
                 
-                window.shakaPlayer.load(ch.url).then(() => video.play()).catch(e => { loader.style.display = 'none'; errorMsg.style.display = 'block'; });
+                // گوێگرتن ل هەلەیان ژبۆ دوبارە لێدانێ پشتی 3 چرکەیان
+                window.shakaPlayer.addEventListener('error', () => {
+                    autoRetryTimer = setTimeout(() => { if(currentPlayingChannel) playChannel(currentPlayingChannel); }, 3000);
+                });
+                
+                window.shakaPlayer.load(ch.url).then(() => video.play()).catch(e => { 
+                    loader.style.display = 'none'; errorMsg.style.display = 'block'; 
+                    autoRetryTimer = setTimeout(() => { if(currentPlayingChannel) playChannel(currentPlayingChannel); }, 3000);
+                });
             } else {
                 if (Hls.isSupported()) {
                     window.hlsPlayer = new Hls(); window.hlsPlayer.loadSource(ch.url); window.hlsPlayer.attachMedia(video);
                     window.hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
-                    window.hlsPlayer.on(Hls.Events.ERROR, function(event, data) { if (data.fatal) { loader.style.display = 'none'; errorMsg.style.display = 'block'; } });
+                    window.hlsPlayer.on(Hls.Events.ERROR, function(event, data) { 
+                        if (data.fatal) { 
+                            loader.style.display = 'none'; errorMsg.style.display = 'block'; 
+                            autoRetryTimer = setTimeout(() => { if(currentPlayingChannel) playChannel(currentPlayingChannel); }, 3000);
+                        } 
+                    });
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
                     video.src = ch.url; video.addEventListener('loadedmetadata', function() { video.play(); }); 
+                    video.onerror = function() {
+                        autoRetryTimer = setTimeout(() => { if(currentPlayingChannel) playChannel(currentPlayingChannel); }, 3000);
+                    };
                 }
             }
         }
@@ -855,5 +880,8 @@
     loadOnlineChannels();
 </script>
 
-    </body>
+    
+</body>
 </html>
+
+    
