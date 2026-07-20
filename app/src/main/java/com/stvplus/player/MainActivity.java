@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private ExoPlayer player;
     private boolean isFullScreen = true;
     
+    // یوزەر-ئێجێنتێ کۆمپیوتەری تەنێ دێ بۆ کەنالێن ExoPlayer هێتە بکارئینان
     private final String CHROME_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     @Override
@@ -131,16 +132,15 @@ public class MainActivity extends AppCompatActivity {
                 } catch(Exception e) {}
             }
 
-            // --- سیستەمێ ئۆتۆماتیکی یێ دوبارە کارپێکرنێ ژبۆ ExoPlayer ---
             @Override
             public void onPlayerError(PlaybackException error) {
                 if (playerView != null) {
                     playerView.postDelayed(() -> {
                         if (player != null) {
-                            player.prepare(); // ڤیدیۆیێ ژ نوی ئامادە دکەتەڤە
-                            player.play();    // لێددەتەڤە
+                            player.prepare(); 
+                            player.play();    
                         }
-                    }, 3000); // پشتی 3 چرکەیان دێ بزاڤێ کەتەڤە
+                    }, 3000); 
                 }
             }
         });
@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
         
-        webSettings.setUserAgentString(CHROME_USER_AGENT);
+        // تێبینی: من User-Agent یێ کۆمپیوتەری ل ڤێرە لادا دا کو Shaka Player بێ کێشە کار بکەت!
         
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
@@ -187,6 +187,8 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
+                
+                // User-Agent یێ کۆمپیوتەری تەنێ بۆ ڤێرە (ExoPlayer) دهێتە بکارئینان
                 httpDataSourceFactory.setUserAgent(CHROME_USER_AGENT);
                 
                 if (referer != null && !referer.trim().isEmpty()) {
