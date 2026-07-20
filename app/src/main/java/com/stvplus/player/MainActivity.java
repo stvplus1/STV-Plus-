@@ -44,12 +44,14 @@ public class MainActivity extends AppCompatActivity {
     private PlayerView playerView;
     private ExoPlayer player;
     private boolean isFullScreen = true;
+    
+    // یوزەر-ئێجێنتەکێ بەهێز یێ کۆمپیوتەری بۆ ڤەکرنا هەمی لینکان
+    private final String CHROME_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // --- ١. چارەسەریا فول سکرین کامل و جهێ کامیرێ (Notch) ---
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
@@ -63,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
             controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             isFullScreen = true;
         }
-        // ---------------------------------------------------------
 
         setContentView(R.layout.activity_main);
         playerView = findViewById(R.id.player_view);
@@ -137,17 +138,18 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
         
+        // زێدەکرنا User-Agent بۆ WebView (Shaka Player)
+        webSettings.setUserAgentString(CHROME_USER_AGENT);
+        
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
 
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidPlayer");
         webView.loadUrl("file:///android_asset/index.html");
 
-        // --- ٢. دیارکرنا قەبارێ کەنالان د دەمێ دەستپێکرنێ دا ---
         updatePlayerViewLayout(getResources().getConfiguration().orientation);
     }
 
-    // --- ٣. چارەسەریا بەرزەبوونا کەنالان د دەمێ ڕاستکرنا مۆبایلێ دا ---
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -158,16 +160,13 @@ public class MainActivity extends AppCompatActivity {
         if (playerView != null) {
             ViewGroup.LayoutParams params = playerView.getLayoutParams();
             if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                // د دەمێ ڕاستکرنێ دا، ڤیدیۆیێ دکەتە ٣٥٪ دا بکەڤیتە دەرڤەی لیستا کەنالان
                 params.height = (int) (getResources().getDisplayMetrics().heightPixels * 0.35);
             } else {
-                // د دەمێ لادانێ (Landscape) دکەتە فول سکرین تەمام
                 params.height = ViewGroup.LayoutParams.MATCH_PARENT;
             }
             playerView.setLayoutParams(params);
         }
     }
-    // ----------------------------------------------------------------
 
     private class WebAppInterface {
         
@@ -176,6 +175,9 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
+                
+                // زێدەکرنا User-Agent بۆ سیستەمێ ExoPlayer 
+                httpDataSourceFactory.setUserAgent(CHROME_USER_AGENT);
                 
                 if (referer != null && !referer.trim().isEmpty()) {
                     httpDataSourceFactory.setDefaultRequestProperties(java.util.Collections.singletonMap("Referer", referer.trim()));
