@@ -1,1 +1,398 @@
 
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plume Flix | Pro Activation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --red: #ff4757;
+            --purple: #8e44ad;
+            --blue: #00d2d3;
+            --whatsapp: #25D366;
+            --gray: #95a5a6;
+            --orange: #f39c12;
+            --glass: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #080212;
+            background-image: radial-gradient(circle at top right, #1a0b2e, #080212);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .status-pill {
+            background: var(--glass);
+            padding: 6px 15px;
+            border-radius: 50px;
+            font-size: 11px;
+            border: 1px solid var(--border);
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .activation-box {
+            background: white;
+            color: #333;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            max-width: 380px;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .crown-icon {
+            color: #f39c12;
+            font-size: 45px;
+            margin-bottom: 10px;
+        }
+
+        .activation-box h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .activation-box p.subtitle {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .id-box {
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .id-box span {
+            display: block;
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .id-box strong {
+            display: block;
+            font-size: 28px;
+            color: var(--purple);
+            letter-spacing: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #dfe6e9;
+            background: #fdfdfd;
+            color: #333;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 8px rgba(142, 68, 173, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-purple { background: var(--purple); color: white; }
+        .btn-whatsapp { background: var(--whatsapp); color: white; }
+        .btn-gray { background: var(--gray); color: white; margin-bottom: 0; }
+
+        .error-msg {
+            color: var(--red);
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 25px 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            backdrop-filter: blur(8px);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            border-radius: 15px;
+        }
+
+        .red .icon-box { background: rgba(255, 71, 87, 0.15); color: var(--red); }
+        .purple .icon-box { background: rgba(142, 68, 173, 0.15); color: var(--purple); }
+
+        .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .card p { font-size: 10px; opacity: 0.5; text-transform: uppercase; }
+
+        @media (max-width: 600px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .card {
+                padding: 15px;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                text-align: right;
+            }
+            .icon-box { margin: 0; width: 45px; height: 45px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <div class="logo">+✓🅢<span style="color:var(--red)">𝐓</span></div>
+            <div class="status-pill" id="statusPill">
+                </div>
+        </header>
+
+        <div id="activationSection" class="activation-box hidden">
+            <div class="crown-icon"><i class="fas fa-crown"></i></div>
+            <h2>وەشانێ پرۆ (Pro)</h2>
+            <p class="subtitle">ماوێ تاقیکرنێ (24 دەمژمێر) ب دوماهی هات، بۆ بەردەوامی پێویستە بەرنامەی بکەیە پرۆ.</p>
+            
+            <div class="id-box">
+                <span>کۆدێ مۆبایلا تە (ID):</span>
+                <strong id="displayDeviceID">-----</strong>
+            </div>
+
+            <div class="input-group">
+                <input type="number" id="activationInput" placeholder="کۆدێ چالاککرنێ ل ڤێرێ بنڤیسە...">
+            </div>
+            
+            <button class="btn btn-purple" onclick="verifyActivationCode()">
+                <i class="fas fa-unlock"></i> چالاککرن ب کۆدێ
+            </button>
+
+            <button class="btn btn-whatsapp" onclick="openWhatsApp()">
+                <i class="fab fa-whatsapp" style="font-size: 18px;"></i> پەیوەندی ب واتسئاپ
+            </button>
+
+            <button class="btn btn-gray" onclick="closeApp()">
+                دائێخستن
+            </button>
+
+            <div id="errorMsg" class="error-msg"><i class="fas fa-exclamation-triangle"></i> کۆدێ تە نڤێسیە خەلەتە!</div>
+        </div>
+
+        <main id="mainSection" class="menu-grid hidden">
+            <!-- ل ڤێرە لینکا tv.html بۆ کەنالان هاتە زێدەکرن -->
+            <a href="tv.html" class="card-link">
+                <div class="card red">
+                    <div class="icon-box"><i class="fas fa-tv"></i></div>
+                    <div>
+                        <h2>کەنال</h2>
+                        <p>TV Box</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- ل ڤێرە لینکا tv.html بۆ پەخشی ڕاستەوخۆ هاتە زێدەکرن -->
+            <a href="tv.html" class="card-link">
+                <div class="card red">
+                    <div class="icon-box"><i class="fas fa-tablet-alt"></i></div>
+                    <div>
+                        <h2>پەخشی ڕاستەوخۆ</h2>
+                        <p>Live TV</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- ل ڤێرە لینکا movies.html بۆ فیلمەکان هاتە زێدەکرن -->
+            <a href="movies.html" class="card-link">
+                <div class="card purple">
+                    <div class="icon-box"><i class="fas fa-film"></i></div>
+                    <div>
+                        <h2>فیلمەکان</h2>
+                        <p>Movies</p>
+                    </div>
+                </div>
+            </a>
+        </main>
+    </div>
+
+    <script>
+        let deviceID = localStorage.getItem('user_device_id');
+        let isActivated = localStorage.getItem('is_pro_activated');
+        let firstVisitTime = localStorage.getItem('first_visit_time');
+
+        if (!deviceID) {
+            deviceID = Math.floor(Math.random() * 90000) + 10000;
+            localStorage.setItem('user_device_id', deviceID);
+        }
+        document.getElementById('displayDeviceID').innerText = deviceID;
+
+        if (!firstVisitTime) {
+            firstVisitTime = new Date().getTime(); 
+            localStorage.setItem('first_visit_time', firstVisitTime);
+        }
+
+        function checkAppStatus() {
+            const now = new Date().getTime(); 
+            const trialDuration = 24 * 60 * 60 * 1000; 
+            const timeElapsed = now - parseInt(firstVisitTime); 
+            const timeLeft = trialDuration - timeElapsed; 
+
+            if (isActivated === 'true') {
+                showMainMenu("PRO ACTIVATED", "#2ecc71");
+            } else if (timeLeft > 0) {
+                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                
+                let trialText = `${hoursLeft}h ${minsLeft}m ماوە`;
+                showMainMenu(trialText, "var(--orange)");
+            } else {
+                showActivationScreen();
+            }
+        }
+
+        checkAppStatus();
+
+        function showMainMenu(statusText, color) {
+            document.getElementById('activationSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+            document.getElementById('statusPill').innerHTML = `<i class="fas fa-circle" style="color: ${color}; font-size: 8px;"></i> <span style="font-weight:bold; letter-spacing:1px;">${statusText}</span>`;
+        }
+
+        function showActivationScreen() {
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('activationSection').classList.remove('hidden');
+            document.getElementById('statusPill').innerHTML = `<i class="fas fa-lock" style="color: var(--red); font-size: 10px;"></i> <span style="color:var(--red); font-weight:bold;">EXPIRED</span>`;
+        }
+
+        function verifyActivationCode() {
+            const inputCode = document.getElementById('activationInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const activationSection = document.getElementById('activationSection');
+            
+            const expectedCode = (parseInt(deviceID) * 5) - 1984;
+
+            if (inputCode == expectedCode) {
+                errorMsg.style.display = 'none';
+                localStorage.setItem('is_pro_activated', 'true');
+                checkAppStatus(); 
+            } else {
+                errorMsg.style.display = 'block';
+                activationSection.style.transform = "translateX(10px)";
+                setTimeout(() => { activationSection.style.transform = "translateX(-10px)"; }, 100);
+                setTimeout(() => { activationSection.style.transform = "translateX(0)"; }, 200);
+            }
+        }
+
+        function openWhatsApp() {
+            const phoneNumber = "9647502161339"; 
+            const textMsg = encodeURIComponent("سلاڤ، ماوێ تاقیکرنێ ب دوماهی هات و من دڤێت بەرنامەیی ئەکتیڤ بکەم.\nکۆدێ مۆبایلا من ئەڤەیە: " + deviceID);
+            window.open("https://wa.me/" + phoneNumber + "?text=" + textMsg, "_blank");
+        }
+
+        function closeApp() {
+            alert("پێویستە کۆدێ چالاککرنێ لێبدەی بۆ بەکارهێنانا بەرنامەی.");
+        }
+    </script>
+</body>
+</html>
