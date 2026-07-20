@@ -45,12 +45,15 @@ public class MainActivity extends AppCompatActivity {
     private ExoPlayer player;
     private boolean isFullScreen = true;
     
-    // یوزەر-ئێجێنتەکێ بەهێز یێ کۆمپیوتەری بۆ ڤەکرنا هەمی لینکان
     private final String CHROME_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // --- ئەڤ ڕێزە ناهێلیت شاشەیا مۆبایلێ قفڵ ببیت ل دەمێ تەماشەکرنێ ---
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // -----------------------------------------------------------------
         
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
@@ -133,14 +136,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.setBackgroundColor(Color.TRANSPARENT);
+        webView.clearCache(true); 
+        
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
-        
-        // زێدەکرنا User-Agent بۆ WebView (Shaka Player)
-        webSettings.setUserAgentString(CHROME_USER_AGENT);
-        
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
 
@@ -175,8 +176,6 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
-                
-                // زێدەکرنا User-Agent بۆ سیستەمێ ExoPlayer 
                 httpDataSourceFactory.setUserAgent(CHROME_USER_AGENT);
                 
                 if (referer != null && !referer.trim().isEmpty()) {
@@ -188,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
                 MediaItem.Builder mediaItemBuilder = new MediaItem.Builder().setUri(url);
 
-                if (drmKeyId != null && !drmKeyId.trim().isEmpty() && drmKey != null && !drmKey.trim().isEmpty()) {
+                if (drmKeyId != null && drmKeyId.length() >= 32 && drmKey != null && drmKey.length() >= 32) {
                     String cleanKeyId = drmKeyId.trim();
                     String cleanKey = drmKey.trim();
                     
@@ -217,11 +216,15 @@ public class MainActivity extends AppCompatActivity {
         }
         
         private String hexToBase64Url(String hex) {
-            byte[] bytes = new byte[hex.length() / 2];
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+            try {
+                byte[] bytes = new byte[hex.length() / 2];
+                for (int i = 0; i < bytes.length; i++) {
+                    bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+                }
+                return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "";
             }
-            return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
         }
 
         @JavascriptInterface
@@ -293,6 +296,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // دەمێ ژ بەرنامەی دەردکەڤیت، با پاتری ئاسایی بکار بهێتەڤە
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (player != null) {
             player.release();
         }
