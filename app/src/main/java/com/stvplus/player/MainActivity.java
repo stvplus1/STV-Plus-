@@ -46,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private ExoPlayer player;
     private boolean isFullScreen = true;
     
-    // یوزەر-ئێجێنتێ کۆمپیوتەری تەنێ دێ بۆ کەنالێن ExoPlayer هێتە بکارئینان
     private final String CHROME_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     @Override
@@ -150,9 +149,6 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
-        
-        // تێبینی: من User-Agent یێ کۆمپیوتەری ل ڤێرە لادا دا کو Shaka Player بێ کێشە کار بکەت!
-        
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
 
@@ -187,8 +183,6 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
-                
-                // User-Agent یێ کۆمپیوتەری تەنێ بۆ ڤێرە (ExoPlayer) دهێتە بکارئینان
                 httpDataSourceFactory.setUserAgent(CHROME_USER_AGENT);
                 
                 if (referer != null && !referer.trim().isEmpty()) {
@@ -204,11 +198,14 @@ public class MainActivity extends AppCompatActivity {
                     String cleanKeyId = drmKeyId.trim();
                     String cleanKey = drmKey.trim();
                     
+                    // سیستەمێ نوی و پارێزراو بۆ خویندنا کلیلێ
                     String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + hexToBase64Url(cleanKey) + "\",\"kid\":\"" + hexToBase64Url(cleanKeyId) + "\"}],\"type\":\"temporary\"}";
                     String licenseUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.getBytes(), android.util.Base64.NO_WRAP);
                     
                     DrmConfiguration drmConfig = new DrmConfiguration.Builder(C.CLEARKEY_UUID)
                             .setLicenseUri(licenseUri)
+                            .setMultiSession(true) // گرنگە بۆ ڤیدیۆیێن DASH
+                            .setForceSessionsForAudioAndVideoTracks(true) // دەنگ و وێنەی پێکڤە ڤەدکەت
                             .build();
                     mediaItemBuilder.setDrmConfiguration(drmConfig);
                 }
@@ -228,10 +225,13 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         
+        // ڕێکا نویا بێ کێشە بۆ گۆڕینا وشەیا نهێنی
         private String hexToBase64Url(String hex) {
             byte[] bytes = new byte[hex.length() / 2];
             for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+                int high = Character.digit(hex.charAt(2 * i), 16);
+                int low = Character.digit(hex.charAt(2 * i + 1), 16);
+                bytes[i] = (byte) ((high << 4) + low);
             }
             return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
         }
