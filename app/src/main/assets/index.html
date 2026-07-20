@@ -363,7 +363,8 @@
 
 
 
-                <script>
+                                    
+    <script>
     const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
 
     let allChannels = []; 
@@ -564,7 +565,6 @@
         selectedQualityStr = "-1_-1"; 
         selectedAudioStr = "-1_-1"; 
         
-        // هەمی کەنال ڕاستەوخۆ دچنە ناو ئەندرۆیدێ (ExoPlayer)
         if (ch.type === 'embed' || ch.isIframe) {
             document.getElementById('videoContainer').style.display = 'none'; 
             document.getElementById('embedWrapper').style.display = 'block'; 
@@ -572,7 +572,10 @@
         } else if (window.AndroidPlayer) {
             document.getElementById('videoContainer').style.display = 'none';
             document.getElementById('embedWrapper').style.display = 'none';
-            window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
+            // ل ڤێرە کلیل ب دروستی دهێنە هنارتن بۆ ئەندرۆید
+            let keyId = ch.drmKeyId ? ch.drmKeyId : "";
+            let keyVal = ch.drmKey ? ch.drmKey : "";
+            window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", keyId, keyVal);
         }
         
         document.getElementById('uiNum').innerText = ch.id; 
@@ -748,6 +751,7 @@
     
     loadOnlineChannels();
 </script>
+
 
 
     
