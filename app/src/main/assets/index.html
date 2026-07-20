@@ -356,15 +356,11 @@
 
 
 
-
-<script>
-    // لینکێت تە یێ ئۆنلاین بۆ کەنالان
+    <script>
     const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
 
     let allChannels = []; 
-
     let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
-    
     const groupIcons = {
         "هەمی": "fa-layer-group", "دڵخواز": "fa-heart", "تایبەت": "fa-star", "کوردستان": "fa-mountain-sun",
         "تورکی": "fa-moon", "عەرەبی": "fa-globe", "ئاینی": "fa-book-quran", "منداڵان": "fa-child-reaching",
@@ -409,12 +405,10 @@
         try {
             let response = await fetch(ONLINE_CHANNELS_URL + '?t=' + new Date().getTime());
             if (!response.ok) throw new Error("Network response was not ok");
-            
             let data = await response.json();
             allChannels = data;
             localStorage.setItem('savedOnlineChannels', JSON.stringify(data));
         } catch (error) {
-            console.error("Error loading online channels:", error);
             let saved = localStorage.getItem('savedOnlineChannels');
             if (saved) {
                 allChannels = JSON.parse(saved);
@@ -429,7 +423,6 @@
             allChannels = [...customChannels, ...allChannels];
             if(!groups.includes("تایبەت")) groups.splice(2, 0, "تایبەت");
         }
-
         initApp();
     }
 
@@ -555,9 +548,7 @@
         if(isMenuOpen) updateFocus();
     }
 
-    function saveChannelsState() {
-        filterByGroup(currentGroup);
-    }
+    function saveChannelsState() { filterByGroup(currentGroup); }
 
     function loadByIndex(i, close = false) { if(isEditMode) return; const ch = filteredChannels[i]; if(!ch) return; playChannel(ch); if (close) toggleMenu(false); }
     function loadByNumber(n) { if(isEditMode) return; const ch = allChannels.find(c => c.id == n); if(ch) playChannel(ch); }
@@ -567,7 +558,10 @@
         localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
         selectedQualityStr = "-1_-1"; selectedAudioStr = "-1_-1"; 
         
-        if (window.AndroidPlayer) {
+        // ---------------------------------------------------------------------
+        // ١. ئەگەر کەنال نە 'dash' بوو (وەک HLS ئاسایی)، ب ڕێکا ئەندرۆید لێدە:
+        // ---------------------------------------------------------------------
+        if (window.AndroidPlayer && ch.type !== 'dash') {
             document.getElementById('videoContainer').style.display = 'none';
             document.getElementById('embedWrapper').style.display = 'none';
             document.getElementById('uiNum').innerText = ch.id; 
@@ -575,13 +569,21 @@
             document.getElementById('uiLogo').querySelector('img').src = ch.logo; 
             showUI();
             
-            // هنارتنا زانیاریێن تایبەت (DRM و Referer) بۆ ئەندرۆیدێ ب ڕاستەوخۆ
             window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
             return;
         }
 
+        // ---------------------------------------------------------------------
+        // ٢. ئەگەر کەنال 'dash' بوو (وەک StarzPlay)، ب ڕێکا وێبگەڕی لێدە:
+        // ---------------------------------------------------------------------
+        if (window.AndroidPlayer && ch.type === 'dash') {
+            // ئەندرۆید بوەستینە دا دەنگ تێکەل نەبیت
+            window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); 
+        }
+
         const video = document.getElementById('main-video'); const errorMsg = document.getElementById('error-message'); const loader = document.getElementById('video-loader');
         const videoContainer = document.getElementById('videoContainer'); const embedWrapper = document.getElementById('embedWrapper'); const embedPlayer = document.getElementById('embedPlayer');
+        
         if (window.hlsPlayer) { window.hlsPlayer.destroy(); window.hlsPlayer = null; }
         if (window.shakaPlayer) { window.shakaPlayer.destroy(); window.shakaPlayer = null; }
         errorMsg.style.display = 'none'; loader.style.display = 'block'; video.style.opacity = '0';
@@ -591,6 +593,8 @@
             videoContainer.style.display = 'none'; embedWrapper.style.display = 'block'; embedPlayer.src = ch.url; embedPlayer.onload = function() { loader.style.display = 'none'; };
         } else {
             embedWrapper.style.display = 'none'; embedPlayer.src = 'about:blank'; videoContainer.style.display = 'flex';
+            videoContainer.style.background = '#000'; // باکگراوەند ڕەش دکەت دا ئەندرۆید ل پشتێ دیار نەمینیت
+            
             if (ch.type === 'dash') {
                 shaka.polyfill.installAll(); window.shakaPlayer = new shaka.Player(video);
                 
@@ -634,14 +638,14 @@
     function updateFocus() { const items = document.querySelectorAll('.channel-item'); if (items[focusedIndex]) { items[focusedIndex].scrollIntoView({ block: 'center', behavior: 'auto' }); } }
 
     function toggleQuality(show) {
-        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe)) { alert("کوالێتی بۆ ڤی کەنالی نە گونجایە"); return; }
+        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe || currentPlayingChannel.type === 'dash')) { alert("کوالێتی خۆکارە (Auto) بۆ ڤی کەنالی"); return; }
         const overlay = document.getElementById('qualityOverlay'); isQualityOpen = show !== undefined ? show : !isQualityOpen;
         if (isQualityOpen) { isControlFocused = false; updateControlFocus(); populateQualityList(); overlay.classList.add('active'); toggleMenu(false); toggleAudio(false); } else overlay.classList.remove('active');
     }
 
     function populateQualityList() {
         const list = document.getElementById('qualityList'); list.innerHTML = ''; 
-        if (window.AndroidPlayer) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
             qualityLevelsCount = androidVideoTracks.length + 1;
             let isActiveAuto = selectedQualityStr === "-1_-1" ? 'active' : '';
             list.innerHTML += `<div class="quality-item ${isActiveAuto} focused" onclick="setQuality(-1, -1)"><span>Auto</span><i class="fa-solid fa-check"></i></div>`;
@@ -664,7 +668,7 @@
     }
 
     function setQuality(val, trackIndex) {
-        if (window.AndroidPlayer) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
             selectedQualityStr = val + "_" + trackIndex;
             window.AndroidPlayer.setVideoQuality(val, trackIndex);
             toggleQuality(false);
@@ -679,14 +683,14 @@
     function selectFocusedQuality() { const items = document.querySelectorAll('.quality-item'); if (items[focusedQualityIndex]) items[focusedQualityIndex].click(); }
 
     function toggleAudio(show) {
-        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe)) { alert("تراکا دەنگی بۆ ڤی کەنالی نە گونجایە"); return; }
+        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe || currentPlayingChannel.type === 'dash')) { alert("دەنگ خۆکارە بۆ ڤی کەنالی"); return; }
         const overlay = document.getElementById('audioOverlay'); isAudioOpen = show !== undefined ? show : !isAudioOpen;
         if (isAudioOpen) { isControlFocused = false; updateControlFocus(); populateAudioList(); overlay.classList.add('active'); toggleMenu(false); toggleQuality(false); } else overlay.classList.remove('active');
     }
 
     function populateAudioList() {
         const list = document.getElementById('audioList'); list.innerHTML = ''; 
-        if (window.AndroidPlayer) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
             audioTracksCount = androidAudioTracks.length + 1;
             let isActiveAuto = selectedAudioStr === "-1_-1" ? 'active' : '';
             list.innerHTML += `<div class="audio-item ${isActiveAuto} focused" onclick="setAudio(-1, -1)"><span>Default Audio</span><i class="fa-solid fa-check"></i></div>`;
@@ -707,7 +711,7 @@
     }
 
     function setAudio(val, trackIndex) {
-        if (window.AndroidPlayer) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
             selectedAudioStr = val + "_" + trackIndex;
             window.AndroidPlayer.setAudioTrack(val, trackIndex);
             toggleAudio(false);
@@ -794,9 +798,9 @@
     window.addEventListener('offline', function() { document.getElementById('video-loader').style.display = 'none'; document.getElementById('error-message').style.display = 'block'; });
     window.addEventListener('online', function() { if (currentPlayingChannel) playChannel(currentPlayingChannel); else if (allChannels.length > 0) loadByIndex(0); });
     
-    // دەستپێکرنا بەرنامەی و ڕاکێشانا کەنالان ب ئۆنلاین
     loadOnlineChannels();
 </script>
+
 </body>
 </html>
 
