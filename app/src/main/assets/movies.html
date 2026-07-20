@@ -142,10 +142,20 @@
             // چارەسەریا ڤەکرنا فلمان ب ڕێکا ExoPlayer یێ ئەندرۆیدێ
             window.playMovie = function(index) {
                 const movie = allMovies[index];
+                
+                // ئەگەر بەرنامێ تە بخۆ تایبەتمەندیا AndroidPlayer تێدا بیت دێ ب ڤێ ڕێکێ کارکەت
                 if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
                     window.AndroidPlayer.playStream(movie.url, 'hls', movie.referer || "", "", "");
                 } else {
-                    window.location.href = movie.url;
+                    // ئەگەر نە، دێ بکارئینانا (Intent) راستەوخۆ ڤیدیۆیێ د Exoplayer یان پلەیەرێ دەرەکی دا ڤەکەت
+                    let videoUrl = movie.url.replace(/^https?:\/\//, ''); // لادانا پروتوکۆلی بۆ ئینتێنت
+                    let scheme = movie.url.startsWith('https') ? 'https' : 'http';
+                    
+                    // دروستکرنا لینکا Intent بۆ سیستەمێ ئەندرۆید
+                    let intentUrl = `intent://${videoUrl}#Intent;action=android.intent.action.VIEW;scheme=${scheme};type=video/*;end;`;
+                    
+                    // ڤەکرنا لینکێ
+                    window.location.href = intentUrl;
                 }
             };
         });
