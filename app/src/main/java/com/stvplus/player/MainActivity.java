@@ -11,7 +11,6 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
-// Media3 Imports
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
@@ -34,6 +33,9 @@ import androidx.media3.ui.PlayerView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
@@ -134,18 +136,31 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 
-                if (referer != null && !referer.isEmpty()) {
-                    httpDataSourceFactory.setDefaultRequestProperties(java.util.Collections.singletonMap("Referer", referer));
+                // دانانا User-Agent یێ بهێز دا کو StarzPlay بلۆک نەکەت
+                httpDataSourceFactory.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36");
+                httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
+                
+                Map<String, String> headers = new HashMap<>();
+                if (referer != null && !referer.trim().isEmpty()) {
+                    headers.put("Referer", referer.trim());
                 }
+                headers.put("Accept", "*/*");
+                httpDataSourceFactory.setDefaultRequestProperties(headers);
 
                 MediaItem.Builder mediaItemBuilder = new MediaItem.Builder().setUri(url);
 
-                if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
-                    String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + hexToBase64Url(drmKey) + "\",\"kid\":\"" + hexToBase64Url(drmKeyId) + "\"}],\"type\":\"temporary\"}";
+                // ڕێکخستنا ب هێزتر یا DRM بۆ کەنالێن وەکو StarzPlay
+                if (drmKeyId != null && !drmKeyId.trim().isEmpty() && drmKey != null && !drmKey.trim().isEmpty()) {
+                    String cleanKeyId = drmKeyId.trim();
+                    String cleanKey = drmKey.trim();
+                    
+                    String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + hexToBase64Url(cleanKey) + "\",\"kid\":\"" + hexToBase64Url(cleanKeyId) + "\"}],\"type\":\"temporary\"}";
                     String licenseUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.getBytes(), android.util.Base64.NO_WRAP);
                     
                     DrmConfiguration drmConfig = new DrmConfiguration.Builder(C.CLEARKEY_UUID)
                             .setLicenseUri(licenseUri)
+                            // ئەڤە زۆر گرنگە بۆ Starz Play دا کو دەنگ و وێنە پێکڤە ڤەبن
+                            .setForceSessionsForAudioAndVideoTracks(true) 
                             .build();
                     mediaItemBuilder.setDrmConfiguration(drmConfig);
                 }
