@@ -356,7 +356,14 @@
 
 
 
-    <script>
+
+
+
+
+
+
+
+<script>
     const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
 
     let allChannels = []; 
@@ -446,7 +453,7 @@
 
     function toggleVideoFit() {
         currentFitIndex = (currentFitIndex + 1) % fitModes.length;
-        if (window.AndroidPlayer && window.AndroidPlayer.setResizeMode) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
             window.AndroidPlayer.setResizeMode(currentFitIndex);
         } else {
             const video = document.getElementById('main-video');
@@ -558,9 +565,6 @@
         localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
         selectedQualityStr = "-1_-1"; selectedAudioStr = "-1_-1"; 
         
-        // ---------------------------------------------------------------------
-        // ١. ئەگەر کەنال نە 'dash' بوو (وەک HLS ئاسایی)، ب ڕێکا ئەندرۆید لێدە:
-        // ---------------------------------------------------------------------
         if (window.AndroidPlayer && ch.type !== 'dash') {
             document.getElementById('videoContainer').style.display = 'none';
             document.getElementById('embedWrapper').style.display = 'none';
@@ -573,11 +577,7 @@
             return;
         }
 
-        // ---------------------------------------------------------------------
-        // ٢. ئەگەر کەنال 'dash' بوو (وەک StarzPlay)، ب ڕێکا وێبگەڕی لێدە:
-        // ---------------------------------------------------------------------
         if (window.AndroidPlayer && ch.type === 'dash') {
-            // ئەندرۆید بوەستینە دا دەنگ تێکەل نەبیت
             window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); 
         }
 
@@ -593,7 +593,7 @@
             videoContainer.style.display = 'none'; embedWrapper.style.display = 'block'; embedPlayer.src = ch.url; embedPlayer.onload = function() { loader.style.display = 'none'; };
         } else {
             embedWrapper.style.display = 'none'; embedPlayer.src = 'about:blank'; videoContainer.style.display = 'flex';
-            videoContainer.style.background = '#000'; // باکگراوەند ڕەش دکەت دا ئەندرۆید ل پشتێ دیار نەمینیت
+            videoContainer.style.background = '#000';
             
             if (ch.type === 'dash') {
                 shaka.polyfill.installAll(); window.shakaPlayer = new shaka.Player(video);
@@ -638,7 +638,7 @@
     function updateFocus() { const items = document.querySelectorAll('.channel-item'); if (items[focusedIndex]) { items[focusedIndex].scrollIntoView({ block: 'center', behavior: 'auto' }); } }
 
     function toggleQuality(show) {
-        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe || currentPlayingChannel.type === 'dash')) { alert("کوالێتی خۆکارە (Auto) بۆ ڤی کەنالی"); return; }
+        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe)) { showToast("کوالێتی بۆ ڤی کەنالی ناهێتە گۆڕین"); return; }
         const overlay = document.getElementById('qualityOverlay'); isQualityOpen = show !== undefined ? show : !isQualityOpen;
         if (isQualityOpen) { isControlFocused = false; updateControlFocus(); populateQualityList(); overlay.classList.add('active'); toggleMenu(false); toggleAudio(false); } else overlay.classList.remove('active');
     }
@@ -657,6 +657,20 @@
             });
             focusedQualityIndex = 0; updateQualityFocus(); return;
         }
+
+        if (window.shakaPlayer && currentPlayingChannel && currentPlayingChannel.type === 'dash') {
+            try {
+                let tracks = window.shakaPlayer.getVariantTracks();
+                let heights = [...new Set(tracks.map(t => t.height).filter(h => h > 0))].sort((a,b)=>b-a);
+                qualityLevelsCount = heights.length + 1;
+                list.innerHTML += `<div class="quality-item focused" onclick="setQualityShaka(-1)"><span>Auto</span><i class="fa-solid fa-check"></i></div>`;
+                heights.forEach((h, i) => {
+                    list.innerHTML += `<div class="quality-item" onclick="setQualityShaka(${h})"><span>${h}p</span><i class="fa-solid fa-check"></i></div>`;
+                });
+                focusedQualityIndex = 0; updateQualityFocus(); return;
+            } catch(e) {}
+        }
+
         try {
             if (window.hlsPlayer) {
                 const levels = window.hlsPlayer.levels; qualityLevelsCount = levels.length + 1; focusedQualityIndex = window.hlsPlayer.currentLevel === -1 ? 0 : window.hlsPlayer.currentLevel + 1;
@@ -678,12 +692,26 @@
         toggleQuality(false);
     }
 
+    function setQualityShaka(h) {
+        if(window.shakaPlayer) {
+            if(h === -1) {
+                window.shakaPlayer.configure({abr: {enabled: true}});
+            } else {
+                window.shakaPlayer.configure({abr: {enabled: false}});
+                let tracks = window.shakaPlayer.getVariantTracks();
+                let track = tracks.find(t => t.height === h);
+                if(track) window.shakaPlayer.selectVariantTrack(track, true);
+            }
+        }
+        toggleQuality(false);
+    }
+
     function moveQualityFocus(dir) { if (qualityLevelsCount === 0) return; focusedQualityIndex = (focusedQualityIndex + dir + qualityLevelsCount) % qualityLevelsCount; updateQualityFocus(); }
     function updateQualityFocus() { const items = document.querySelectorAll('.quality-item'); items.forEach((item, idx) => { if (idx === focusedQualityIndex) { item.classList.add('focused'); item.scrollIntoView({ block: 'nearest', behavior: 'auto' }); } else item.classList.remove('focused'); }); }
     function selectFocusedQuality() { const items = document.querySelectorAll('.quality-item'); if (items[focusedQualityIndex]) items[focusedQualityIndex].click(); }
 
     function toggleAudio(show) {
-        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe || currentPlayingChannel.type === 'dash')) { alert("دەنگ خۆکارە بۆ ڤی کەنالی"); return; }
+        if(currentPlayingChannel && (currentPlayingChannel.type === 'embed' || currentPlayingChannel.isIframe)) { showToast("تراکا دەنگی بۆ ڤی کەنالی ناهێتە گۆڕین"); return; }
         const overlay = document.getElementById('audioOverlay'); isAudioOpen = show !== undefined ? show : !isAudioOpen;
         if (isAudioOpen) { isControlFocused = false; updateControlFocus(); populateAudioList(); overlay.classList.add('active'); toggleMenu(false); toggleQuality(false); } else overlay.classList.remove('active');
     }
@@ -701,6 +729,21 @@
             });
             focusedAudioIndex = 0; updateAudioFocus(); return;
         }
+
+        if (window.shakaPlayer && currentPlayingChannel && currentPlayingChannel.type === 'dash') {
+            try {
+                let langs = window.shakaPlayer.getAudioLanguagesAndRoles().map(l => l.language);
+                let uniqueLangs = [...new Set(langs)];
+                audioTracksCount = uniqueLangs.length + 1;
+                list.innerHTML += `<div class="audio-item focused" onclick="setAudioShaka('')"><span>Default Audio</span><i class="fa-solid fa-check"></i></div>`;
+                uniqueLangs.forEach(lang => {
+                    let dispName = lang === 'ar' ? 'Arabic' : lang === 'en' ? 'English' : lang;
+                    list.innerHTML += `<div class="audio-item" onclick="setAudioShaka('${lang}')"><span>${dispName}</span><i class="fa-solid fa-check"></i></div>`;
+                });
+                focusedAudioIndex = 0; updateAudioFocus(); return;
+            } catch(e) {}
+        }
+
         try {
             if (window.hlsPlayer && window.hlsPlayer.audioTracks) {
                 const tracks = window.hlsPlayer.audioTracks; audioTracksCount = tracks.length; focusedAudioIndex = window.hlsPlayer.audioTrack; if(tracks.length === 0) throw "no tracks";
@@ -718,6 +761,18 @@
             return;
         }
         if(window.hlsPlayer) window.hlsPlayer.audioTrack = val; toggleAudio(false); 
+    }
+
+    function setAudioShaka(lang) {
+        if(window.shakaPlayer) {
+            if(lang === '') {
+                let tracks = window.shakaPlayer.getVariantTracks();
+                if(tracks.length > 0) window.shakaPlayer.selectAudioLanguage(tracks[0].language);
+            } else {
+                window.shakaPlayer.selectAudioLanguage(lang);
+            }
+        }
+        toggleAudio(false);
     }
 
     function moveAudioFocus(dir) { if (audioTracksCount === 0) return; focusedAudioIndex = (focusedAudioIndex + dir + audioTracksCount) % audioTracksCount; updateAudioFocus(); }
@@ -751,7 +806,6 @@
 
     function autoFullScreen() {
         if (window.AndroidPlayer && window.AndroidPlayer.toggleNativeFullScreen) {
-            // ئەندرۆید ب خۆ دێ کارکەت
         } else {
             const elem = document.getElementById("mainWrapper");
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -801,8 +855,5 @@
     loadOnlineChannels();
 </script>
 
-</body>
+    </body>
 </html>
-
-
-    
