@@ -67,10 +67,10 @@
   },
   {
     "id": 509,
-    "name": "Starz play 2",
+    "name": "Starz play 2ts",
     "group": "وەرزشی",
     "logo": "https://files.cdn-files-a.com/uploads/278563/400_69ebca6f9ef9e.png",
-    "url": "https://sps2.starzplayarabia.com/out/v1/af6e929916584ab0823af2a08dddc090/index.mpd",
+    "url": "http://max4kcdn.com:8080//live/5mRAF74MYwfjaxc9VRmRAF74MY9/5mRAF74MY9wfjaxc9VR5mRAF74MYwfjaxc9VR/176711.ts",
     "type": "dash",
     "drmKeyId": "ee861edcd99093153a763a94b14c2c5a",
     "drmKey": "ab3991f6a7729ba1ea4bcdba0c1ae6c0"
