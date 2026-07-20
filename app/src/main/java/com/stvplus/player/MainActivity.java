@@ -20,6 +20,7 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.TrackSelectionOverride;
+import androidx.media3.common.PlaybackException;
 import androidx.media3.common.MediaItem.DrmConfiguration;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
@@ -45,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private ExoPlayer player;
     private boolean isFullScreen = true;
     
-    // یوزەر-ئێجێنتەکێ بەهێز یێ کۆمپیوتەری بۆ ڤەکرنا هەمی لینکان
     private final String CHROME_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     @Override
@@ -130,6 +130,19 @@ public class MainActivity extends AppCompatActivity {
                     });
                 } catch(Exception e) {}
             }
+
+            // --- سیستەمێ ئۆتۆماتیکی یێ دوبارە کارپێکرنێ ژبۆ ExoPlayer ---
+            @Override
+            public void onPlayerError(PlaybackException error) {
+                if (playerView != null) {
+                    playerView.postDelayed(() -> {
+                        if (player != null) {
+                            player.prepare(); // ڤیدیۆیێ ژ نوی ئامادە دکەتەڤە
+                            player.play();    // لێددەتەڤە
+                        }
+                    }, 3000); // پشتی 3 چرکەیان دێ بزاڤێ کەتەڤە
+                }
+            }
         });
 
         webView.setBackgroundColor(Color.TRANSPARENT);
@@ -138,7 +151,6 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
         
-        // زێدەکرنا User-Agent بۆ WebView (Shaka Player)
         webSettings.setUserAgentString(CHROME_USER_AGENT);
         
         webSettings.setAllowFileAccessFromFileURLs(true);
@@ -175,8 +187,6 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
                 httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
-                
-                // زێدەکرنا User-Agent بۆ سیستەمێ ExoPlayer 
                 httpDataSourceFactory.setUserAgent(CHROME_USER_AGENT);
                 
                 if (referer != null && !referer.trim().isEmpty()) {
