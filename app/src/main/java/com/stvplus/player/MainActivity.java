@@ -124,6 +124,12 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
+        
+        // --- چارەسەریا سەرەکی بۆ کێشەیا Shaka Player (Starz Play) ---
+        // ئەڤ دوو ڕێزە مۆڵەتێ ددەنە فایلێ index.html کو ڤیدیۆیان ژ سێرڤەران ڕابکێشیت بێ ڕێگری
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        webSettings.setAllowUniversalAccessFromFileURLs(true);
+        // -------------------------------------------------------------
 
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidPlayer");
         webView.loadUrl("file:///android_asset/index.html");
@@ -141,7 +147,6 @@ public class MainActivity extends AppCompatActivity {
                     httpDataSourceFactory.setDefaultRequestProperties(java.util.Collections.singletonMap("Referer", referer.trim()));
                 }
 
-                // *** چارەسەریا سەرەکی ل ڤێرەیە: داهێلێت کلیلێن DRM بخوێنیت ***
                 androidx.media3.datasource.DefaultDataSource.Factory dataSourceFactory = 
                         new androidx.media3.datasource.DefaultDataSource.Factory(MainActivity.this, httpDataSourceFactory);
 
