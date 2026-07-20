@@ -58,7 +58,7 @@
         <div class="loading"><i class="fas fa-spinner fa-spin"></i> دئینیت...</div>
     </div>
 
-    <script>
+        <script>
         $(document).ready(function() {
             const jsonUrl = "https://raw.githubusercontent.com/stvplus1/Hodber/refs/heads/main/m2.json"; 
             let allMovies = []; 
@@ -139,18 +139,17 @@
                 }
             });
 
-            // ل ڤێرە فیلم دچتە ناو ExoPlayer یێ ئەندرۆیدێ
+            // چارەسەریا ڤەکرنا فلمان ب ڕێکا ExoPlayer یێ ئەندرۆیدێ
             window.playMovie = function(index) {
                 const movie = allMovies[index];
-                if (window.AndroidPlayer) {
-                    // هنارتنا لینک و ڕەفەرێ بۆ ExoPlayer
+                if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
                     window.AndroidPlayer.playStream(movie.url, 'hls', movie.referer || "", "", "");
                 } else {
-                    // ئەگەر ل مۆبایلا ئاسایی (Browser) تاقی بکەی دێ ویدیو لەسەر وێبگەری ڤەکەت
                     window.location.href = movie.url;
                 }
             };
         });
     </script>
+
 </body>
 </html>
