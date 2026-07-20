@@ -20,7 +20,6 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.TrackSelectionOverride;
-import androidx.media3.common.PlaybackException;
 import androidx.media3.common.MediaItem.DrmConfiguration;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
@@ -130,21 +129,12 @@ public class MainActivity extends AppCompatActivity {
                     });
                 } catch(Exception e) {}
             }
-
-            @Override
-            public void onPlayerError(PlaybackException error) {
-                if (playerView != null) {
-                    playerView.postDelayed(() -> {
-                        if (player != null) {
-                            player.prepare(); 
-                            player.play();    
-                        }
-                    }, 3000); 
-                }
-            }
         });
 
         webView.setBackgroundColor(Color.TRANSPARENT);
+        // پاقژکرنا کاشێ (Cache) دا کو بەرنامە کۆدێ نوی یێ جاڤاسکریپتێ بخوێنیت
+        webView.clearCache(true); 
+        
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -194,18 +184,15 @@ public class MainActivity extends AppCompatActivity {
 
                 MediaItem.Builder mediaItemBuilder = new MediaItem.Builder().setUri(url);
 
-                if (drmKeyId != null && !drmKeyId.trim().isEmpty() && drmKey != null && !drmKey.trim().isEmpty()) {
+                if (drmKeyId != null && drmKeyId.length() >= 32 && drmKey != null && drmKey.length() >= 32) {
                     String cleanKeyId = drmKeyId.trim();
                     String cleanKey = drmKey.trim();
                     
-                    // سیستەمێ نوی و پارێزراو بۆ خویندنا کلیلێ
                     String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + hexToBase64Url(cleanKey) + "\",\"kid\":\"" + hexToBase64Url(cleanKeyId) + "\"}],\"type\":\"temporary\"}";
                     String licenseUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.getBytes(), android.util.Base64.NO_WRAP);
                     
                     DrmConfiguration drmConfig = new DrmConfiguration.Builder(C.CLEARKEY_UUID)
                             .setLicenseUri(licenseUri)
-                            .setMultiSession(true) // گرنگە بۆ ڤیدیۆیێن DASH
-                            .setForceSessionsForAudioAndVideoTracks(true) // دەنگ و وێنەی پێکڤە ڤەدکەت
                             .build();
                     mediaItemBuilder.setDrmConfiguration(drmConfig);
                 }
@@ -225,15 +212,16 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         
-        // ڕێکا نویا بێ کێشە بۆ گۆڕینا وشەیا نهێنی
         private String hexToBase64Url(String hex) {
-            byte[] bytes = new byte[hex.length() / 2];
-            for (int i = 0; i < bytes.length; i++) {
-                int high = Character.digit(hex.charAt(2 * i), 16);
-                int low = Character.digit(hex.charAt(2 * i + 1), 16);
-                bytes[i] = (byte) ((high << 4) + low);
+            try {
+                byte[] bytes = new byte[hex.length() / 2];
+                for (int i = 0; i < bytes.length; i++) {
+                    bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+                }
+                return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "";
             }
-            return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
         }
 
         @JavascriptInterface
