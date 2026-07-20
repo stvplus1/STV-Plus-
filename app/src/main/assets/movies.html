@@ -6,131 +6,74 @@
     <title>STv+ Movies</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    
     <style>
-        :root { --red: #ff0000; --bg: #050505; --card: #121212; }
+        :root { --red: #e50914; --bg: #050505; --card: #121212; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg); color: #eee; overflow-x: hidden; padding-top: 130px; }
 
-        /* Header fixed */
-        .fixed-top {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(5, 5, 5, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            border-bottom: 1px solid #222;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-        }
-
+        .fixed-top { position: fixed; top: 0; width: 100%; background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px); z-index: 1000; border-bottom: 1px solid #222; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
         .logo { font-size: 24px; font-weight: 800; color: white; }
         .logo span { color: var(--red); }
-
-        .search-box {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 6px 12px;
-            display: flex;
-            align-items: center;
-            width: 180px;
-        }
-
-        .search-box input {
-            background: none;
-            border: none;
-            color: white;
-            outline: none;
-            font-size: 13px;
-            width: 100%;
-            margin-right: 8px;
-        }
-
-        /* Categories */
-        .categories-nav {
-            display: flex;
-            overflow-x: auto;
-            padding: 10px 15px 15px;
-            gap: 10px;
-            scrollbar-width: none;
-        }
+        .search-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; width: 180px; }
+        .search-box input { background: none; border: none; color: white; outline: none; font-size: 13px; width: 100%; margin-right: 8px; }
+        .categories-nav { display: flex; overflow-x: auto; padding: 10px 15px 15px; gap: 10px; scrollbar-width: none; }
         .categories-nav::-webkit-scrollbar { display: none; }
-
-        .cat-item {
-            background: #1a1a1a;
-            color: #bbb;
-            padding: 6px 18px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: 0.3s;
-            border: 1px solid #333;
-        }
-
-        .cat-item.active {
-            background: var(--red);
-            color: white;
-            border-color: var(--red);
-        }
-
-        /* Movie Grid */
-        .movie-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            padding: 15px;
-        }
-
-        .movie-card {
-            background: var(--card);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #222;
-            transition: 0.3s;
-            position: relative;
-        }
-
-        .movie-card img {
-            width: 100%;
-            aspect-ratio: 2/3;
-            object-fit: cover;
-            display: block;
-        }
-
-        .movie-card .info {
-            padding: 8px;
-            font-size: 12px;
-            text-align: center;
-            font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .cat-item { background: #1a1a1a; color: #bbb; padding: 6px 18px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; transition: 0.3s; border: 1px solid #333; text-transform: capitalize; }
+        .cat-item.active { background: var(--red); color: white; border-color: var(--red); }
+        .movie-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
+        .movie-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; transition: 0.3s; position: relative; cursor: pointer; }
+        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
+        .movie-card .info { padding: 8px; font-size: 12px; text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .loading { text-align: center; padding: 50px; grid-column: 1 / -1; color: #888; }
+        
+        /* شێوازێ پەنجەرەیا پلەیەرێ - گۆڕانکاریێن فول سکرینێ */
+        .player-modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; /* ب تەمامی پانیێ دگریت */
+            height: 100vh; /* ب تەمامی درێژیێ دگریت */
+            background: #000; 
+            z-index: 999999; /* دێ ل سەر هەمی تشتەکێ دی بیت */
+            justify-content: center; 
+            align-items: center; 
         }
         
-        .loading {
-            text-align: center;
-            padding: 50px;
-            grid-column: 1 / -1;
-            color: #888;
+        /* دوگمەیا داخستنێ دێ کەڤیتە سەرۆڤە ل سەر ڤیدیۆیێ */
+        .close-player { 
+            position: absolute; 
+            top: 20px; 
+            right: 30px; 
+            color: white; 
+            font-size: 24px; 
+            cursor: pointer; 
+            z-index: 2001; 
+            background: rgba(0,0,0,0.5); 
+            width: 45px; 
+            height: 45px; 
+            border-radius: 50%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: 0.3s; 
         }
+        .close-player:hover { background: var(--red); }
+        
+        /* شوینێ پلەیەرێ ArtPlayer */
+        #artplayer-app { width: 100%; height: 100%; direction: ltr; }
 
-        @media (min-width: 768px) {
-            .movie-grid { grid-template-columns: repeat(6, 1fr); }
-        }
+        @media (min-width: 768px) { .movie-grid { grid-template-columns: repeat(6, 1fr); } }
     </style>
 </head>
 <body>
 
     <div class="fixed-top">
         <header>
-            <div class="logo">DNA<span>MOVIES</span></div>
+            <div class="logo">STv+<span>MOVIES</span></div>
             <div class="search-box">
                 <i class="fas fa-search" style="color: #666;"></i>
                 <input type="text" id="movieSearch" placeholder="لێگەریان...">
@@ -138,7 +81,6 @@
         </header>
 
         <div class="categories-nav" id="categoryList">
-            <!-- Categories will be loaded dynamically here -->
             <span class="cat-item active" data-filter="all">هەمی</span>
         </div>
     </div>
@@ -147,77 +89,92 @@
         <div class="loading"><i class="fas fa-spinner fa-spin"></i> دئینیت...</div>
     </div>
 
+    <div class="player-modal" id="playerModal">
+        <div class="close-player" id="closePlayer"><i class="fas fa-times"></i></div>
+        <div id="artplayer-app"></div>
+    </div>
+
     <script>
         $(document).ready(function() {
-            const m3uUrl = "https://raw.githubusercontent.com/stvplus1/Movies/refs/heads/main/movies26.m3u";
+            const jsonUrl = "https://raw.githubusercontent.com/stvplus1/Hodber/refs/heads/main/m2.json"; 
+            let allMovies = []; 
+            let art = null; 
 
-            // فەنکشنا ئینانا داتایێن M3U
-            fetch(m3uUrl)
-                .then(response => response.text())
+            // فەنکشنا چوونە ناڤ فول سکرین
+            function openFullscreen() {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { /* Safari */
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { /* IE11 */
+                    elem.msRequestFullscreen();
+                }
+            }
+
+            // فەنکشنا دەرکەفتن ژ فول سکرین
+            function closeFullscreen() {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+            }
+
+            fetch(jsonUrl)
+                .then(response => response.json())
                 .then(data => {
-                    parseM3U(data);
+                    if(data && data.items) {
+                        processJSON(data.items);
+                    } else {
+                        $('#movieList').html('<div class="loading">داتا د فایلێ دا نەهاتە دیتن.</div>');
+                    }
                 })
                 .catch(error => {
-                    console.error("Error fetching M3U:", error);
-                    $('#movieList').html('<div class="loading">کێشە دئینانا فایلێ M3U دا هەیە.</div>');
+                    console.error("Error fetching JSON:", error);
+                    $('#movieList').html('<div class="loading">کێشە دئینانا فایلێ JSON دا هەیە.</div>');
                 });
 
-            function parseM3U(data) {
-                const lines = data.split('\n');
-                let movies = [];
-                let currentMovie = {};
+            function processJSON(items) {
                 let groups = new Set();
+                allMovies = []; 
 
-                for (let i = 0; i < lines.length; i++) {
-                    let line = lines[i].trim();
+                items.forEach((item, index) => {
+                    let movieGroups = (item.keys && item.keys.length > 0) ? item.keys : ['others'];
+                    movieGroups.forEach(g => { if(g) groups.add(g.toLowerCase()); });
 
-                    if (line.startsWith('#EXTINF:')) {
-                        // ئینانا وێنەی (Logo)
-                        let logoMatch = line.match(/tvg-logo="(.*?)"/);
-                        currentMovie.logo = logoMatch ? logoMatch[1] : 'https://via.placeholder.com/200x300?text=No+Image';
-
-                        // ئینانا پۆلێنکرنێ (Group)
-                        let groupMatch = line.match(/group-title="(.*?)"/);
-                        let group = groupMatch ? groupMatch[1] : 'Others';
-                        currentMovie.group = group;
-                        if (group) groups.add(group);
-
-                        // ئینانا ناڤێ فلیمی
-                        let titleMatch = line.split(',');
-                        currentMovie.title = titleMatch.length > 1 ? titleMatch[1].trim() : 'Unknown';
-                    } 
-                    else if (line && !line.startsWith('#')) {
-                        // ئینانا لینکی
-                        currentMovie.url = line;
-                        movies.push(currentMovie);
-                        currentMovie = {}; // Reset for next movie
-                    }
-                }
-
-                renderData(movies, Array.from(groups));
+                    allMovies.push({
+                        id: item.id || index,
+                        title: item.title || 'Unknown',
+                        poster: item.poster || 'https://via.placeholder.com/200x300?text=No+Image',
+                        url: item.url || '',
+                        group: movieGroups.map(g => g.toLowerCase()).join(' '),
+                        subtitles: item.subtitles || [] 
+                    });
+                });
+                renderData(allMovies, Array.from(groups).sort());
             }
 
             function renderData(movies, groups) {
-                // دروستکرنا پۆلێنکرنان ل سەرۆڤە (Categories)
                 let catHtml = '<span class="cat-item active" data-filter="all">هەمی</span>';
                 groups.forEach(group => {
                     catHtml += `<span class="cat-item" data-filter="${group}">${group}</span>`;
                 });
                 $('#categoryList').html(catHtml);
 
-                // دروستکرنا کاردێن فلیمان
                 let movieHtml = '';
-                movies.forEach(movie => {
+                movies.forEach((movie, index) => {
                     movieHtml += `
-                    <div class="movie-card" data-genre="${movie.group}" title="${movie.title}">
-                        <a href="${movie.url}"><img src="${movie.logo}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'"></a>
+                    <div class="movie-card" data-genre="${movie.group}" title="${movie.title}" onclick="openPlayer(${index})">
+                        <img src="${movie.poster}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
                         <div class="info">${movie.title}</div>
                     </div>`;
                 });
                 $('#movieList').html(movieHtml);
             }
 
-            // فلتەرکرن ب لێگەریان (Search) - کاردکەت دگەل داتایێن نوی
             $('#movieSearch').on('input', function() {
                 var value = $(this).val().toLowerCase();
                 $('.movie-card').each(function() {
@@ -226,20 +183,116 @@
                 });
             });
 
-            // فلتەرکرن ب ڕێکا پۆلێنکردنێ (Categories) - بکارئینانا Delegation ژبەرکو داتایێن داینامیکن
             $(document).on('click', '.cat-item', function() {
                 $('.cat-item').removeClass('active');
                 $(this).addClass('active');
-
                 var filter = $(this).attr('data-filter');
 
                 if (filter === 'all') {
                     $('.movie-card').fadeIn(300);
                 } else {
                     $('.movie-card').hide();
-                    $('.movie-card[data-genre="' + filter + '"]').fadeIn(300);
+                    $('.movie-card').filter(function() {
+                        var genres = $(this).attr('data-genre').split(' ');
+                        return genres.includes(filter);
+                    }).fadeIn(300);
                 }
             });
+
+            $('#closePlayer').on('click', function() {
+                // دەمێ فلیمی دگریت، دێ ژ فول سکرینێ دەرکەڤیت
+                closeFullscreen();
+                
+                // شاشەیێ ئاسایی دکەتە ڤە ئەگەر مە زڤڕاندبیت
+                try { if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+
+                if(art) {
+                    art.pause();
+                    art.destroy(true);
+                    art = null;
+                }
+                $('#playerModal').fadeOut();
+            });
+
+            window.openPlayer = function(index) {
+                const movie = allMovies[index];
+                
+                // دەستپێکرنا فول سکرین ڕاستەوخۆ دەمێ کلیکێ دکەت
+                openFullscreen();
+
+                // بزاڤکرن بۆ زڤڕاندنا شاشەیێ ب شێوەیێ ئاسۆیی (Landscape)
+                try { 
+                    if(screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').catch(e => console.log(e));
+                    }
+                } catch (e) {}
+
+                if(art) {
+                    art.destroy(true);
+                }
+
+                let subList = [];
+                let defaultSubUrl = '';
+                
+                if (movie.subtitles && movie.subtitles.length > 0) {
+                    movie.subtitles.forEach((sub, idx) => {
+                        subList.push({
+                            html: sub.language,
+                            url: sub.url
+                        });
+                        if(idx === 0) defaultSubUrl = sub.url; 
+                    });
+                }
+
+                $('#playerModal').css('display', 'flex').hide().fadeIn();
+
+                art = new Artplayer({
+                    container: '#artplayer-app',
+                    url: movie.url,
+                    title: movie.title,
+                    poster: movie.poster,
+                    theme: '#e50914',
+                    volume: 1,
+                    autoplay: true,
+                    pip: false,
+                    setting: true,
+                    flip: true,
+                    playbackRate: true,
+                    aspectRatio: true,
+                    fullscreen: true,
+                    fullscreenWeb: true,
+                    subtitleOffset: true,
+                    miniProgressBar: true,
+                    playsInline: true,
+                    icons: {
+                        loading: '<i class="fas fa-spinner fa-spin" style="font-size: 40px;"></i>',
+                    },
+                    subtitle: {
+                        url: defaultSubUrl,
+                        type: 'srt',
+                        style: {
+                            color: '#fff',
+                            fontSize: '24px', // مەزنکرنا فۆنتێ تەرجومەیێ د فول سکرینێ دا
+                            textShadow: '2px 2px 4px #000'
+                        },
+                        encoding: 'utf-8',
+                    },
+                    settings: [
+                        {
+                            width: 200,
+                            html: 'زمانێ تەرجومەیێ',
+                            tooltip: 'هەلبژێرە',
+                            selector: subList,
+                            onSelect: function (item) {
+                                art.subtitle.switch(item.url, {
+                                    name: item.html,
+                                });
+                                return item.html;
+                            },
+                        },
+                    ],
+                });
+            };
         });
     </script>
 </body>
