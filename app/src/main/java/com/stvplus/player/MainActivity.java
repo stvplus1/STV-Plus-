@@ -1,7 +1,9 @@
 package com.stvplus.player;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -41,17 +43,27 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private PlayerView playerView;
     private ExoPlayer player;
-    private boolean isFullScreen = false;
+    private boolean isFullScreen = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // --- ١. چارەسەریا فول سکرین کامل و جهێ کامیرێ (Notch) ---
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
             layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(layoutParams);
         }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            controller.hide(WindowInsetsCompat.Type.systemBars());
+            controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            isFullScreen = true;
+        }
+        // ---------------------------------------------------------
 
         setContentView(R.layout.activity_main);
         playerView = findViewById(R.id.player_view);
@@ -125,15 +137,37 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
         
-        // --- چارەسەریا سەرەکی بۆ کێشەیا Shaka Player (Starz Play) ---
-        // ئەڤ دوو ڕێزە مۆڵەتێ ددەنە فایلێ index.html کو ڤیدیۆیان ژ سێرڤەران ڕابکێشیت بێ ڕێگری
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
-        // -------------------------------------------------------------
 
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidPlayer");
         webView.loadUrl("file:///android_asset/index.html");
+
+        // --- ٢. دیارکرنا قەبارێ کەنالان د دەمێ دەستپێکرنێ دا ---
+        updatePlayerViewLayout(getResources().getConfiguration().orientation);
     }
+
+    // --- ٣. چارەسەریا بەرزەبوونا کەنالان د دەمێ ڕاستکرنا مۆبایلێ دا ---
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        updatePlayerViewLayout(newConfig.orientation);
+    }
+
+    private void updatePlayerViewLayout(int orientation) {
+        if (playerView != null) {
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                // د دەمێ ڕاستکرنێ دا، ڤیدیۆیێ دکەتە ٣٥٪ دا بکەڤیتە دەرڤەی لیستا کەنالان
+                params.height = (int) (getResources().getDisplayMetrics().heightPixels * 0.35);
+            } else {
+                // د دەمێ لادانێ (Landscape) دکەتە فول سکرین تەمام
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            }
+            playerView.setLayoutParams(params);
+        }
+    }
+    // ----------------------------------------------------------------
 
     private class WebAppInterface {
         
