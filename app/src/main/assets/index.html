@@ -363,7 +363,7 @@
 
 
 
-<script>
+                <script>
     const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
 
     let allChannels = []; 
@@ -388,8 +388,6 @@
     let currentPlayingChannel = null;
     let isEditMode = false;
     let targetChId = null;
-    window.hlsPlayer = null;
-    window.shakaPlayer = null;
 
     let fitModes = ['vid-normal', 'vid-stretch', 'vid-zoom'];
     let fitNames = ['نۆڕماڵ', 'فول سکرین (درێژکرن)', 'زووم'];
@@ -453,14 +451,11 @@
 
     function toggleVideoFit() {
         currentFitIndex = (currentFitIndex + 1) % fitModes.length;
-        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'embed')) {
             window.AndroidPlayer.setResizeMode(currentFitIndex);
         } else {
-            const video = document.getElementById('main-video');
             const embed = document.getElementById('embedPlayer');
-            video.classList.remove('vid-normal', 'vid-stretch', 'vid-zoom');
             embed.classList.remove('vid-normal', 'vid-stretch', 'vid-zoom');
-            video.classList.add(fitModes[currentFitIndex]);
             embed.classList.add(fitModes[currentFitIndex]);
         }
         showToast("قەبارێ شاشەیێ: " + fitNames[currentFitIndex]);
@@ -563,58 +558,27 @@
     function playChannel(ch) {
         if (ch.url.startsWith('go:')) { window.location.href = ch.url; return; }
         
-        localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
-        selectedQualityStr = "-1_-1"; selectedAudioStr = "-1_-1"; 
+        localStorage.setItem('lastChannelId', ch.id); 
+        currentPlayingChannel = ch; 
+        updateFavIcon(); 
+        selectedQualityStr = "-1_-1"; 
+        selectedAudioStr = "-1_-1"; 
         
-        if (window.AndroidPlayer && ch.type !== 'dash') {
+        // هەمی کەنال ڕاستەوخۆ دچنە ناو ئەندرۆیدێ (ExoPlayer)
+        if (ch.type === 'embed' || ch.isIframe) {
+            document.getElementById('videoContainer').style.display = 'none'; 
+            document.getElementById('embedWrapper').style.display = 'block'; 
+            document.getElementById('embedPlayer').src = ch.url;
+        } else if (window.AndroidPlayer) {
             document.getElementById('videoContainer').style.display = 'none';
             document.getElementById('embedWrapper').style.display = 'none';
-            document.getElementById('uiNum').innerText = ch.id; 
-            document.getElementById('uiName').innerText = ch.name; 
-            document.getElementById('uiLogo').querySelector('img').src = ch.logo; 
-            showUI();
-            
             window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
-            return;
         }
-
-        if (window.AndroidPlayer && ch.type === 'dash') {
-            window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); 
-        }
-
-        const video = document.getElementById('main-video'); const errorMsg = document.getElementById('error-message'); const loader = document.getElementById('video-loader');
-        const videoContainer = document.getElementById('videoContainer'); const embedWrapper = document.getElementById('embedWrapper'); const embedPlayer = document.getElementById('embedPlayer');
         
-        if (window.hlsPlayer) { window.hlsPlayer.destroy(); window.hlsPlayer = null; }
-        if (window.shakaPlayer) { window.shakaPlayer.destroy(); window.shakaPlayer = null; }
-        errorMsg.style.display = 'none'; loader.style.display = 'block'; video.style.opacity = '0';
-        video.onplaying = function() { loader.style.display = 'none'; video.style.opacity = '1'; };
-
-        if (ch.type === 'embed' || ch.isIframe) {
-            videoContainer.style.display = 'none'; embedWrapper.style.display = 'block'; embedPlayer.src = ch.url; embedPlayer.onload = function() { loader.style.display = 'none'; };
-        } else {
-            embedWrapper.style.display = 'none'; embedPlayer.src = 'about:blank'; videoContainer.style.display = 'flex';
-            videoContainer.style.background = '#000';
-            
-            if (ch.type === 'dash') {
-                shaka.polyfill.installAll(); window.shakaPlayer = new shaka.Player(video);
-                
-                if (ch.drmKeyId && ch.drmKey) {
-                    window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
-                }
-                
-                window.shakaPlayer.load(ch.url).then(() => video.play()).catch(e => { loader.style.display = 'none'; errorMsg.style.display = 'block'; });
-            } else {
-                if (Hls.isSupported()) {
-                    window.hlsPlayer = new Hls(); window.hlsPlayer.loadSource(ch.url); window.hlsPlayer.attachMedia(video);
-                    window.hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
-                    window.hlsPlayer.on(Hls.Events.ERROR, function(event, data) { if (data.fatal) { loader.style.display = 'none'; errorMsg.style.display = 'block'; } });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
-                    video.src = ch.url; video.addEventListener('loadedmetadata', function() { video.play(); }); 
-                }
-            }
-        }
-        document.getElementById('uiNum').innerText = ch.id; document.getElementById('uiName').innerText = ch.name; document.getElementById('uiLogo').querySelector('img').src = ch.logo; showUI();
+        document.getElementById('uiNum').innerText = ch.id; 
+        document.getElementById('uiName').innerText = ch.name; 
+        document.getElementById('uiLogo').querySelector('img').src = ch.logo; 
+        showUI();
     }
 
     function toggleFav() {
@@ -646,7 +610,7 @@
 
     function populateQualityList() {
         const list = document.getElementById('qualityList'); list.innerHTML = ''; 
-        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'embed')) {
             qualityLevelsCount = androidVideoTracks.length + 1;
             let isActiveAuto = selectedQualityStr === "-1_-1" ? 'active' : '';
             list.innerHTML += `<div class="quality-item ${isActiveAuto} focused" onclick="setQuality(-1, -1)"><span>Auto</span><i class="fa-solid fa-check"></i></div>`;
@@ -658,51 +622,14 @@
             });
             focusedQualityIndex = 0; updateQualityFocus(); return;
         }
-
-        if (window.shakaPlayer && currentPlayingChannel && currentPlayingChannel.type === 'dash') {
-            try {
-                let tracks = window.shakaPlayer.getVariantTracks();
-                let heights = [...new Set(tracks.map(t => t.height).filter(h => h > 0))].sort((a,b)=>b-a);
-                qualityLevelsCount = heights.length + 1;
-                list.innerHTML += `<div class="quality-item focused" onclick="setQualityShaka(-1)"><span>Auto</span><i class="fa-solid fa-check"></i></div>`;
-                heights.forEach((h, i) => {
-                    list.innerHTML += `<div class="quality-item" onclick="setQualityShaka(${h})"><span>${h}p</span><i class="fa-solid fa-check"></i></div>`;
-                });
-                focusedQualityIndex = 0; updateQualityFocus(); return;
-            } catch(e) {}
-        }
-
-        try {
-            if (window.hlsPlayer) {
-                const levels = window.hlsPlayer.levels; qualityLevelsCount = levels.length + 1; focusedQualityIndex = window.hlsPlayer.currentLevel === -1 ? 0 : window.hlsPlayer.currentLevel + 1;
-                list.innerHTML += `<div class="quality-item ${window.hlsPlayer.currentLevel === -1 ? 'active focused' : ''}" onclick="setQuality(-1)"><span>Auto</span><i class="fa-solid fa-check"></i></div>`;
-                levels.forEach((lvl, i) => { let active = window.hlsPlayer.currentLevel === i ? 'active' : ''; list.innerHTML += `<div class="quality-item ${active}" onclick="setQuality(${i})"><span>${lvl.height}p</span><i class="fa-solid fa-check"></i></div>`; });
-            } else { throw "no player"; }
-        } catch (e) { qualityLevelsCount = 1; focusedQualityIndex = 0; list.innerHTML = `<div class="quality-item active focused" id="qItem-0"><span>Auto</span><i class="fa-solid fa-check"></i></div>`; }
-        updateQualityFocus();
     }
 
     function setQuality(val, trackIndex) {
-        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'embed')) {
             selectedQualityStr = val + "_" + trackIndex;
             window.AndroidPlayer.setVideoQuality(val, trackIndex);
             toggleQuality(false);
             return;
-        }
-        if(window.hlsPlayer) { window.hlsPlayer.currentLevel = val; }
-        toggleQuality(false);
-    }
-
-    function setQualityShaka(h) {
-        if(window.shakaPlayer) {
-            if(h === -1) {
-                window.shakaPlayer.configure({abr: {enabled: true}});
-            } else {
-                window.shakaPlayer.configure({abr: {enabled: false}});
-                let tracks = window.shakaPlayer.getVariantTracks();
-                let track = tracks.find(t => t.height === h);
-                if(track) window.shakaPlayer.selectVariantTrack(track, true);
-            }
         }
         toggleQuality(false);
     }
@@ -719,7 +646,7 @@
 
     function populateAudioList() {
         const list = document.getElementById('audioList'); list.innerHTML = ''; 
-        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'embed')) {
             audioTracksCount = androidAudioTracks.length + 1;
             let isActiveAuto = selectedAudioStr === "-1_-1" ? 'active' : '';
             list.innerHTML += `<div class="audio-item ${isActiveAuto} focused" onclick="setAudio(-1, -1)"><span>Default Audio</span><i class="fa-solid fa-check"></i></div>`;
@@ -730,50 +657,16 @@
             });
             focusedAudioIndex = 0; updateAudioFocus(); return;
         }
-
-        if (window.shakaPlayer && currentPlayingChannel && currentPlayingChannel.type === 'dash') {
-            try {
-                let langs = window.shakaPlayer.getAudioLanguagesAndRoles().map(l => l.language);
-                let uniqueLangs = [...new Set(langs)];
-                audioTracksCount = uniqueLangs.length + 1;
-                list.innerHTML += `<div class="audio-item focused" onclick="setAudioShaka('')"><span>Default Audio</span><i class="fa-solid fa-check"></i></div>`;
-                uniqueLangs.forEach(lang => {
-                    let dispName = lang === 'ar' ? 'Arabic' : lang === 'en' ? 'English' : lang;
-                    list.innerHTML += `<div class="audio-item" onclick="setAudioShaka('${lang}')"><span>${dispName}</span><i class="fa-solid fa-check"></i></div>`;
-                });
-                focusedAudioIndex = 0; updateAudioFocus(); return;
-            } catch(e) {}
-        }
-
-        try {
-            if (window.hlsPlayer && window.hlsPlayer.audioTracks) {
-                const tracks = window.hlsPlayer.audioTracks; audioTracksCount = tracks.length; focusedAudioIndex = window.hlsPlayer.audioTrack; if(tracks.length === 0) throw "no tracks";
-                tracks.forEach((t, i) => { let active = window.hlsPlayer.audioTrack === i ? 'active' : ''; let isFocused = focusedAudioIndex === i ? 'focused' : ''; list.innerHTML += `<div class="audio-item ${active} ${isFocused}" onclick="setAudio(${i})"><span>${t.name || 'Track '+i}</span><i class="fa-solid fa-check"></i></div>`; });
-            } else { throw "no player"; }
-        } catch (e) { audioTracksCount = 1; focusedAudioIndex = 0; list.innerHTML = `<div class="audio-item active focused" id="aItem-0"><span>Default Audio</span><i class="fa-solid fa-check"></i></div>`; }
-        updateAudioFocus();
     }
 
     function setAudio(val, trackIndex) {
-        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) {
+        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'embed')) {
             selectedAudioStr = val + "_" + trackIndex;
             window.AndroidPlayer.setAudioTrack(val, trackIndex);
             toggleAudio(false);
             return;
         }
-        if(window.hlsPlayer) window.hlsPlayer.audioTrack = val; toggleAudio(false); 
-    }
-
-    function setAudioShaka(lang) {
-        if(window.shakaPlayer) {
-            if(lang === '') {
-                let tracks = window.shakaPlayer.getVariantTracks();
-                if(tracks.length > 0) window.shakaPlayer.selectAudioLanguage(tracks[0].language);
-            } else {
-                window.shakaPlayer.selectAudioLanguage(lang);
-            }
-        }
-        toggleAudio(false);
+        toggleAudio(false); 
     }
 
     function moveAudioFocus(dir) { if (audioTracksCount === 0) return; focusedAudioIndex = (focusedAudioIndex + dir + audioTracksCount) % audioTracksCount; updateAudioFocus(); }
@@ -855,6 +748,7 @@
     
     loadOnlineChannels();
 </script>
+
 
     
 </body>
