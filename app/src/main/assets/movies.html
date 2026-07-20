@@ -6,43 +6,131 @@
     <title>STv+ Movies</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
     <style>
-        :root { --red: #e50914; --bg: #050505; --card: #121212; }
+        :root { --red: #ff0000; --bg: #050505; --card: #121212; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg); color: #eee; overflow-x: hidden; padding-top: 130px; }
 
-        .fixed-top { position: fixed; top: 0; width: 100%; background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px); z-index: 1000; border-bottom: 1px solid #222; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
-        .logo { font-size: 24px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
-        .logo span { color: var(--red); }
-        .back-btn { background: rgba(255,255,255,0.1); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        
-        .search-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; width: 180px; }
-        .search-box input { background: none; border: none; color: white; outline: none; font-size: 13px; width: 100%; margin-right: 8px; }
-        
-        .categories-nav { display: flex; overflow-x: auto; padding: 10px 15px 15px; gap: 10px; scrollbar-width: none; }
-        .categories-nav::-webkit-scrollbar { display: none; }
-        .cat-item { background: #1a1a1a; color: #bbb; padding: 6px 18px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; transition: 0.3s; border: 1px solid #333; text-transform: capitalize; }
-        .cat-item.active { background: var(--red); color: white; border-color: var(--red); }
-        
-        .movie-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
-        .movie-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; transition: 0.3s; position: relative; cursor: pointer; }
-        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
-        .movie-card .info { padding: 8px; font-size: 12px; text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .loading { text-align: center; padding: 50px; grid-column: 1 / -1; color: #888; }
+        /* Header fixed */
+        .fixed-top {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid #222;
+        }
 
-        @media (min-width: 768px) { .movie-grid { grid-template-columns: repeat(6, 1fr); } }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .logo { font-size: 24px; font-weight: 800; color: white; }
+        .logo span { color: var(--red); }
+
+        .search-box {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            width: 180px;
+        }
+
+        .search-box input {
+            background: none;
+            border: none;
+            color: white;
+            outline: none;
+            font-size: 13px;
+            width: 100%;
+            margin-right: 8px;
+        }
+
+        /* Categories */
+        .categories-nav {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 15px 15px;
+            gap: 10px;
+            scrollbar-width: none;
+        }
+        .categories-nav::-webkit-scrollbar { display: none; }
+
+        .cat-item {
+            background: #1a1a1a;
+            color: #bbb;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s;
+            border: 1px solid #333;
+        }
+
+        .cat-item.active {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        /* Movie Grid */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 15px;
+        }
+
+        .movie-card {
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #222;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .movie-card img {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            display: block;
+        }
+
+        .movie-card .info {
+            padding: 8px;
+            font-size: 12px;
+            text-align: center;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            grid-column: 1 / -1;
+            color: #888;
+        }
+
+        @media (min-width: 768px) {
+            .movie-grid { grid-template-columns: repeat(6, 1fr); }
+        }
     </style>
 </head>
 <body>
 
     <div class="fixed-top">
         <header>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <button class="back-btn" onclick="window.location.href='index.html'" title="زڤڕین"><i class="fas fa-arrow-right"></i></button>
-                <div class="logo">STv+<span>MOVIES</span></div>
-            </div>
+            <div class="logo">DNA<span>MOVIES</span></div>
             <div class="search-box">
                 <i class="fas fa-search" style="color: #666;"></i>
                 <input type="text" id="movieSearch" placeholder="لێگەریان...">
@@ -50,6 +138,7 @@
         </header>
 
         <div class="categories-nav" id="categoryList">
+            <!-- Categories will be loaded dynamically here -->
             <span class="cat-item active" data-filter="all">هەمی</span>
         </div>
     </div>
@@ -58,63 +147,77 @@
         <div class="loading"><i class="fas fa-spinner fa-spin"></i> دئینیت...</div>
     </div>
 
-        <script>
+    <script>
         $(document).ready(function() {
-            const jsonUrl = "https://raw.githubusercontent.com/stvplus1/Hodber/refs/heads/main/m2.json"; 
-            let allMovies = []; 
+            const m3uUrl = "https://raw.githubusercontent.com/stvplus1/Movies/refs/heads/main/movies26.m3u";
 
-            fetch(jsonUrl)
-                .then(response => response.json())
+            // فەنکشنا ئینانا داتایێن M3U
+            fetch(m3uUrl)
+                .then(response => response.text())
                 .then(data => {
-                    if(data && data.items) {
-                        processJSON(data.items);
-                    } else {
-                        $('#movieList').html('<div class="loading">داتا د فایلێ دا نەهاتە دیتن.</div>');
-                    }
+                    parseM3U(data);
                 })
                 .catch(error => {
-                    console.error("Error fetching JSON:", error);
-                    $('#movieList').html('<div class="loading">کێشە دئینانا فایلێ JSON دا هەیە.</div>');
+                    console.error("Error fetching M3U:", error);
+                    $('#movieList').html('<div class="loading">کێشە دئینانا فایلێ M3U دا هەیە.</div>');
                 });
 
-            function processJSON(items) {
+            function parseM3U(data) {
+                const lines = data.split('\n');
+                let movies = [];
+                let currentMovie = {};
                 let groups = new Set();
-                allMovies = []; 
 
-                items.forEach((item, index) => {
-                    let movieGroups = (item.keys && item.keys.length > 0) ? item.keys : ['others'];
-                    movieGroups.forEach(g => { if(g) groups.add(g.toLowerCase()); });
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
 
-                    allMovies.push({
-                        id: item.id || index,
-                        title: item.title || 'Unknown',
-                        poster: item.poster || 'https://via.placeholder.com/200x300?text=No+Image',
-                        url: item.url || '',
-                        group: movieGroups.map(g => g.toLowerCase()).join(' '),
-                        referer: item.referer || ''
-                    });
-                });
-                renderData(allMovies, Array.from(groups).sort());
+                    if (line.startsWith('#EXTINF:')) {
+                        // ئینانا وێنەی (Logo)
+                        let logoMatch = line.match(/tvg-logo="(.*?)"/);
+                        currentMovie.logo = logoMatch ? logoMatch[1] : 'https://via.placeholder.com/200x300?text=No+Image';
+
+                        // ئینانا پۆلێنکرنێ (Group)
+                        let groupMatch = line.match(/group-title="(.*?)"/);
+                        let group = groupMatch ? groupMatch[1] : 'Others';
+                        currentMovie.group = group;
+                        if (group) groups.add(group);
+
+                        // ئینانا ناڤێ فلیمی
+                        let titleMatch = line.split(',');
+                        currentMovie.title = titleMatch.length > 1 ? titleMatch[1].trim() : 'Unknown';
+                    } 
+                    else if (line && !line.startsWith('#')) {
+                        // ئینانا لینکی
+                        currentMovie.url = line;
+                        movies.push(currentMovie);
+                        currentMovie = {}; // Reset for next movie
+                    }
+                }
+
+                renderData(movies, Array.from(groups));
             }
 
             function renderData(movies, groups) {
+                // دروستکرنا پۆلێنکرنان ل سەرۆڤە (Categories)
                 let catHtml = '<span class="cat-item active" data-filter="all">هەمی</span>';
                 groups.forEach(group => {
                     catHtml += `<span class="cat-item" data-filter="${group}">${group}</span>`;
                 });
                 $('#categoryList').html(catHtml);
 
+                // دروستکرنا کاردێن فلیمان
                 let movieHtml = '';
-                movies.forEach((movie, index) => {
+                movies.forEach(movie => {
                     movieHtml += `
-                    <div class="movie-card" data-genre="${movie.group}" title="${movie.title}" onclick="playMovie(${index})">
-                        <img src="${movie.poster}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
+                    <div class="movie-card" data-genre="${movie.group}" title="${movie.title}">
+                        <a href="${movie.url}"><img src="${movie.logo}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'"></a>
                         <div class="info">${movie.title}</div>
                     </div>`;
                 });
                 $('#movieList').html(movieHtml);
             }
 
+            // فلتەرکرن ب لێگەریان (Search) - کاردکەت دگەل داتایێن نوی
             $('#movieSearch').on('input', function() {
                 var value = $(this).val().toLowerCase();
                 $('.movie-card').each(function() {
@@ -123,43 +226,21 @@
                 });
             });
 
+            // فلتەرکرن ب ڕێکا پۆلێنکردنێ (Categories) - بکارئینانا Delegation ژبەرکو داتایێن داینامیکن
             $(document).on('click', '.cat-item', function() {
                 $('.cat-item').removeClass('active');
                 $(this).addClass('active');
+
                 var filter = $(this).attr('data-filter');
 
                 if (filter === 'all') {
                     $('.movie-card').fadeIn(300);
                 } else {
                     $('.movie-card').hide();
-                    $('.movie-card').filter(function() {
-                        var genres = $(this).attr('data-genre').split(' ');
-                        return genres.includes(filter);
-                    }).fadeIn(300);
+                    $('.movie-card[data-genre="' + filter + '"]').fadeIn(300);
                 }
             });
-
-            // چارەسەریا ڤەکرنا فلمان ب ڕێکا ExoPlayer یێ ئەندرۆیدێ
-            window.playMovie = function(index) {
-                const movie = allMovies[index];
-                
-                // ئەگەر بەرنامێ تە بخۆ تایبەتمەندیا AndroidPlayer تێدا بیت دێ ب ڤێ ڕێکێ کارکەت
-                if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
-                    window.AndroidPlayer.playStream(movie.url, 'hls', movie.referer || "", "", "");
-                } else {
-                    // ئەگەر نە، دێ بکارئینانا (Intent) راستەوخۆ ڤیدیۆیێ د Exoplayer یان پلەیەرێ دەرەکی دا ڤەکەت
-                    let videoUrl = movie.url.replace(/^https?:\/\//, ''); // لادانا پروتوکۆلی بۆ ئینتێنت
-                    let scheme = movie.url.startsWith('https') ? 'https' : 'http';
-                    
-                    // دروستکرنا لینکا Intent بۆ سیستەمێ ئەندرۆید
-                    let intentUrl = `intent://${videoUrl}#Intent;action=android.intent.action.VIEW;scheme=${scheme};type=video/*;end;`;
-                    
-                    // ڤەکرنا لینکێ
-                    window.location.href = intentUrl;
-                }
-            };
         });
     </script>
-
 </body>
 </html>
