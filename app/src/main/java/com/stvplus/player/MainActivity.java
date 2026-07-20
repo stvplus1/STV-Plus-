@@ -135,21 +135,18 @@ public class MainActivity extends AppCompatActivity {
         public void playStream(String url, String type, String referer, String drmKeyId, String drmKey) {
             runOnUiThread(() -> {
                 DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory();
-                
-                // دانانا User-Agent یێ بهێز دا کو StarzPlay بلۆک نەکەت
-                httpDataSourceFactory.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36");
                 httpDataSourceFactory.setAllowCrossProtocolRedirects(true);
                 
-                Map<String, String> headers = new HashMap<>();
                 if (referer != null && !referer.trim().isEmpty()) {
-                    headers.put("Referer", referer.trim());
+                    httpDataSourceFactory.setDefaultRequestProperties(java.util.Collections.singletonMap("Referer", referer.trim()));
                 }
-                headers.put("Accept", "*/*");
-                httpDataSourceFactory.setDefaultRequestProperties(headers);
+
+                // *** چارەسەریا سەرەکی ل ڤێرەیە: داهێلێت کلیلێن DRM بخوێنیت ***
+                androidx.media3.datasource.DefaultDataSource.Factory dataSourceFactory = 
+                        new androidx.media3.datasource.DefaultDataSource.Factory(MainActivity.this, httpDataSourceFactory);
 
                 MediaItem.Builder mediaItemBuilder = new MediaItem.Builder().setUri(url);
 
-                // ڕێکخستنا ب هێزتر یا DRM بۆ کەنالێن وەکو StarzPlay
                 if (drmKeyId != null && !drmKeyId.trim().isEmpty() && drmKey != null && !drmKey.trim().isEmpty()) {
                     String cleanKeyId = drmKeyId.trim();
                     String cleanKey = drmKey.trim();
@@ -159,19 +156,17 @@ public class MainActivity extends AppCompatActivity {
                     
                     DrmConfiguration drmConfig = new DrmConfiguration.Builder(C.CLEARKEY_UUID)
                             .setLicenseUri(licenseUri)
-                            // ئەڤە زۆر گرنگە بۆ Starz Play دا کو دەنگ و وێنە پێکڤە ڤەبن
-                            .setForceSessionsForAudioAndVideoTracks(true) 
                             .build();
                     mediaItemBuilder.setDrmConfiguration(drmConfig);
                 }
 
                 MediaItem mediaItem = mediaItemBuilder.build();
-                MediaSource mediaSource;
+                androidx.media3.exoplayer.source.MediaSource mediaSource;
 
                 if (url.contains(".mpd") || "dash".equalsIgnoreCase(type)) {
-                    mediaSource = new DashMediaSource.Factory(httpDataSourceFactory).createMediaSource(mediaItem);
+                    mediaSource = new DashMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem);
                 } else {
-                    mediaSource = new HlsMediaSource.Factory(httpDataSourceFactory).createMediaSource(mediaItem);
+                    mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem);
                 }
 
                 player.setMediaSource(mediaSource);
