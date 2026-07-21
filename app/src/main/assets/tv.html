@@ -1,22 +1,11 @@
-<!DOCTYPE html>
-<html lang="ku" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STv+ Pro TV Box Edition</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/shaka-player.compiled.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root { --accent: #8b5cf6; --bg: #000; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: manipulation; }
+        :root { --accent: #8b5cf6; --bg: transparent; }
+        body { margin: 0; background: transparent; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: manipulation; }
         
-        .player-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #000; display: flex; flex-direction: column; }
+        .player-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: transparent; display: flex; flex-direction: column; }
         
         /* شاشەیا ڤیدیۆیێ ل پشتەڤە */
-        .video-section { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .video-section { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: transparent; }
         
         /* دیزاینا نوی یا لیستا کەنالان (تارمایی ل خوارێ) */
         .list-section { 
@@ -27,10 +16,9 @@
             display: flex; flex-direction: column; gap: 15px;
             will-change: transform;
         }
-        /* دەمێ مینیو ڤەدبیت، دێ ژ خوارێ هێتە سەرەوە */
         .list-section.active { transform: translateY(-100%); }
 
-        /* بەشێ گرووپان (کەتەگۆری) - ب شێوەیێ ئاسۆیی */
+        /* بەشێ گرووپان (کەتەگۆری) */
         .groups-container {
             display: flex; flex-direction: row; gap: 12px; padding: 0 40px;
             overflow-x: auto; scrollbar-width: none; direction: rtl; align-items: center;
@@ -49,10 +37,8 @@
             box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
         }
 
-        /* بەشێ کەنالان (کارتێن هەلاویستی) - ب شێوەیێ ئاسۆیی */
         .channels-area { padding: 10px 0; }
-        
-        .menu-header { display: none; /* ل ڤێ دیزاینێ پێدڤی پێ نینە */ }
+        .menu-header { display: none; }
 
         .channel-list { 
             display: flex; flex-direction: row; gap: 15px; padding: 20px 40px; 
@@ -68,7 +54,6 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             position: relative; overflow: hidden; will-change: transform;
         }
-        /* ئیفێکتا فڕین و درەوشانەوە (GPU Accelerated) بۆ تیڤی بۆکسێ */
         .channel-item.focused { 
             transform: scale(1.15) translateY(-5px); 
             border-color: var(--accent); 
@@ -82,12 +67,10 @@
         .channel-name { font-size: 12px; font-weight: bold; color: white; text-align: center; width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ch-id { position: absolute; top: 5px; left: 8px; font-size: 10px; color: #888; font-weight: bold; }
 
-        /* دوگمەیێن دەستکاریێ (ئەگەر Edit Mode ڤەبوو) */
         .ch-actions { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: space-around; padding: 5px 0; }
         .ch-action-btn { background: none; border: none; font-size: 14px; cursor: pointer; padding: 5px; transition: 0.1s; }
         .btn-del { color: #ef4444; } .btn-move { color: #eab308; } .btn-edit { color: #fff; }
 
-        /* ئینفۆیێ کەنالێ ڕاستەوخۆ ل سەرەوە */
         .overlay-ui {
             position: absolute; top: 0; left: 0; width: 100%; padding: 25px 40px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
@@ -108,7 +91,6 @@
         #uiNum { color: var(--accent); font-size: 18px; }
         .live-badge { background: #ef4444; color: white; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
 
-        /* دوگمەیێن کۆنترۆلێ */
         .controls-bar { display: flex; gap: 10px; pointer-events: auto; direction: ltr; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 30px; }
         .controls-bar button {
             background: transparent; border: none; color: white; font-size: 20px; width: 45px; height: 45px;
@@ -117,7 +99,6 @@
         .controls-bar button:hover, .controls-bar button:focus { background: rgba(255, 255, 255, 0.15); outline: none; }
         .controls-bar button.focused { background: var(--accent) !important; color: white; transform: scale(1.15); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5); }
 
-        /* نامەیێن سیستەمی */
         .toast-msg {
             position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(220, 38, 38, 0.9); color: white; padding: 12px 30px;
@@ -130,18 +111,17 @@
             font-weight: bold; z-index: 3000; display: none; box-shadow: 0 0 20px rgba(139,92,246,0.5);
         }
 
-        /* پلەیەر و لۆدەر */
-        .video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1; display: flex; justify-content: center; align-items: center; }
+        /* پلەیەر و لۆدەر (هەمی بوونە شەفاف) */
+        .video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 1; display: flex; justify-content: center; align-items: center; }
         .vid-normal { object-fit: contain !important; } .vid-stretch { object-fit: fill !important; } .vid-zoom { object-fit: cover !important; }
-        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; }
-        #embedPlayer { width: 100%; height: 100%; border: none; background: #000; pointer-events: auto; }
+        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: transparent; }
+        #embedPlayer { width: 100%; height: 100%; border: none; background: transparent; pointer-events: auto; }
         
         .loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border: 4px solid rgba(255, 0, 0, 0.2); border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; z-index: 20; display: none; }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
         #error-message { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.8); color: #fff; padding: 20px 30px; border-radius: 12px; border: 1px solid red; font-size: 16px; font-weight: bold; text-align: center; z-index: 20; }
         #embedWrapper { position: relative; width: 100%; height: 100%; display: none; z-index: 2;}
 
-        /* ڕێکخستنێن دی یێن کەڤن ژبۆ کارکرنا فەنکشنان */
         .add-ch-overlay, .quality-overlay, .audio-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 6000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.2s; }
         .add-ch-overlay.active, .quality-overlay.active, .audio-overlay.active { opacity: 1; visibility: visible; }
         .add-ch-modal, .quality-modal, .audio-modal { background: #141414; width: 90%; max-width: 400px; border-radius: 16px; padding: 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); }
@@ -156,75 +136,7 @@
         .quality-item i, .audio-item i { display: none; }
         .quality-item.active i, .audio-item.active i { display: block; color: var(--accent); }
     </style>
-</head>
-<body>
 
-<div class="toast-msg" id="errorToast">کێشەیەک د ڤەکرنا کەنالی دا هەیە</div>
-<div class="toast-msg" id="infoToast" style="background: rgba(139, 92, 246, 0.9);"></div>
-<div class="num-indicator" id="numBox"></div>
-
-<div class="player-wrapper" id="mainWrapper">
-    <div class="video-section">
-        <div style="position:absolute; width:100%; height:100%; z-index:5;" id="touchLayer"></div>
-        
-        <div class="overlay-ui" id="overlayUI">
-            <div class="ch-display">
-                <div class="ch-display-logo" id="uiLogo"><img src="" alt=""></div>
-                <div class="ch-display-info">
-                    <h1><span id="uiNum">1</span> <span id="uiName">Navê Kanalê</span></h1>
-                    <div class="live-badge">راستەوخۆ</div>
-                </div>
-            </div>
-
-            <div class="controls-bar" id="controlsBar">
-                <button onclick="navigateRelative(-1)" title="کەنالێ بەری خۆ"><i class="fa-solid fa-backward-step"></i></button>
-                <button onclick="navigateRelative(1)" title="کەنالێ داهاتی"><i class="fa-solid fa-forward-step"></i></button>
-                <button onclick="toggleVideoFit()" title="قەبارێ شاشەیێ"><i class="fa-solid fa-crop"></i></button>
-                <button onclick="toggleFullScreen()" title="شاشەیا تەمام"><i class="fa-solid fa-expand"></i></button>
-                <button onclick="toggleAudio(true)" title="دەنگ"><i class="fa-solid fa-music"></i></button>
-                <button onclick="toggleQuality(true)" title="کوالێتی"><i class="fa-solid fa-gear"></i></button>
-                <button id="favBtn" onclick="toggleFav()" title="دڵخواز"><i class="fa-regular fa-heart"></i></button>
-                <button onclick="toggleMenu(true)" title="لیستا کەنالان"><i class="fa-solid fa-bars"></i></button>
-            </div>
-        </div>
-        
-        <div id="embedWrapper">
-            <iframe id="embedPlayer" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-            <div id="embedOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></div>
-        </div>
-        
-        <div class="video-container" id="videoContainer">
-            <div class="loader" id="video-loader"></div>
-            <video id="main-video" playsinline preload="auto" autoplay class="vid-normal"></video>
-            <div id="error-message"><i class="fa-solid fa-triangle-exclamation"></i> ببورە، ئەم کەناڵە لە ئێستادا کار ناکات</div>
-        </div>
-    </div>
-
-    <!-- مینیوی نوی یێ تیڤی بۆکسێ ل خوارێ -->
-    <div class="list-section side-menu" id="sideMenu" dir="ltr">
-        <!-- بەشێ گرووپان ل سەرەوەی کەنالان -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 40px; margin-bottom: 10px;">
-            <div style="display: flex; gap: 10px;">
-                <button onclick="toggleEditMode()" class="ch-action-btn" style="background: rgba(255,255,255,0.1); color: white; border-radius: 50%; width: 40px; height: 40px;" title="دەستکاری کەنالان"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="toggleAddModal(true)" class="ch-action-btn" style="background: var(--accent); color: white; border-radius: 50%; width: 40px; height: 40px;" title="زێدەکرنا کەنالی"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div class="groups-container" id="groupsBar"></div>
-        </div>
-        
-        <!-- بەشێ کەنالان -->
-        <div class="channels-area">
-            <div class="channel-list" id="channelList"></div>
-        </div>
-    </div>
-
-    <!-- مۆدالێن زێدەکرن و گۆڕین (هەمان یێن تە) -->
-    <div class="add-ch-overlay" id="addChOverlay" onclick="toggleAddModal(false)"><div class="add-ch-modal" onclick="event.stopPropagation()" dir="rtl"><div class="add-ch-header">زیادکرنی کەنالێ نووی</div><div class="add-ch-body"><input type="text" id="newChName" placeholder="ناوی کەنال"><input type="text" id="newChLogo" placeholder="لینکێ لۆگۆیێ کەنال" dir="ltr"><input type="text" id="newChUrl" placeholder="لینکێ پەخشی (M3U8)" dir="ltr"><div class="add-ch-btns"><button class="save-btn" onclick="saveNewChannel()">پاشەکەوتکرن</button><button class="cancel-btn" onclick="toggleAddModal(false)">داخستن</button></div></div></div></div>
-    <div class="add-ch-overlay" id="editChOverlay" onclick="toggleEditChModal(false)"><div class="add-ch-modal" onclick="event.stopPropagation()" dir="rtl"><div class="add-ch-header">دەستکاریکردنی کەناڵ</div><div class="add-ch-body"><input type="hidden" id="editChId"><input type="text" id="editChName" placeholder="ناوی کەنال"><input type="text" id="editChLogo" placeholder="لینکێ لۆگۆیێ کەنال" dir="ltr"><input type="password" id="editChUrl" placeholder="لینکێ پەخشی - ڤەشارتيە" dir="ltr" readonly style="background: #1a1a1a;"><div class="add-ch-btns"><button class="save-btn" onclick="saveEditedChannel()">پاشەکەوتکرن</button><button class="cancel-btn" onclick="toggleEditChModal(false)">داخستن</button></div></div></div></div>
-    <div class="add-ch-overlay" id="moveChOverlay" onclick="toggleMoveModal(false)"><div class="add-ch-modal" onclick="event.stopPropagation()" dir="rtl"><div class="add-ch-header">کواستنەوەی کەناڵ</div><div class="add-ch-body" style="text-align: center;"><p style="font-size: 14px; margin-bottom: 15px; color:#aaa;">ژمارەی نوێ بنووسە:</p><input type="hidden" id="moveChId"><input type="number" id="moveChPos" dir="ltr" style="text-align: center; font-size: 18px;"><div class="add-ch-btns"><button class="save-btn" style="background: #eab308; color: black;" onclick="confirmMove()">گواستنەوە</button><button class="cancel-btn" onclick="toggleMoveModal(false)">داخستن</button></div></div></div></div>
-    <div class="add-ch-overlay" id="deleteChOverlay" onclick="toggleDeleteModal(false)"><div class="add-ch-modal" onclick="event.stopPropagation()" dir="rtl"><div class="add-ch-header" style="color: #ef4444;">دڵنیایی لە سڕینەوە؟</div><div class="add-ch-body" style="text-align: center;"><p style="font-size: 15px; margin-bottom: 25px;">دڵنیای لە سڕینەوەی ئەم کەناڵە؟</p><input type="hidden" id="deleteChId"><div class="add-ch-btns"><button class="save-btn" style="background: #ef4444;" onclick="confirmDelete()">سڕینەوە</button><button class="cancel-btn" onclick="toggleDeleteModal(false)">نەخێر</button></div></div></div></div>
-    <div class="quality-overlay" id="qualityOverlay" onclick="toggleQuality(false)"><div class="quality-modal" onclick="event.stopPropagation()"><div class="quality-header"><i class="fa-solid fa-gear" style="color: var(--accent);"></i><span>Quality</span></div><div class="quality-list" id="qualityList"></div></div></div>
-    <div class="audio-overlay" id="audioOverlay" onclick="toggleAudio(false)"><div class="audio-modal" onclick="event.stopPropagation()"><div class="audio-header"><i class="fa-solid fa-music" style="color: var(--accent);"></i><span>Audio Tracks</span></div><div class="audio-list" id="audioList"></div></div></div>
-</div>
 
 
 
