@@ -3,506 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STv+ TiviMate Pro Plus</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/shaka-player.compiled.js"></script>
+    <title>STv+ Movies</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
     <style>
-        :root { 
-            --tivi-blue: #0277bd; 
-            --tivi-grey: rgba(255, 255, 255, 0.1); 
-            --bg-dark: rgba(20, 24, 30, 0.98); 
-        }
-        
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body { background: transparent; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: none; direction: ltr; }
-        
-        #app-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-        
-        #video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: transparent; }
-        #videoContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1; display: none; }
-        video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
-        
-        #loader { position: absolute; z-index: 50; display: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: var(--tivi-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        :root { --red: #ff0000; --bg: #050505; --card: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg); color: #eee; overflow-x: hidden; padding-top: 130px; }
 
-        /* نیشاندانا هژمارێن لێدایی ل سەر کۆنترۆلێ */
-        #num-indicator {
-            position: absolute; top: 30px; left: 40px; background: rgba(2, 119, 189, 0.9); color: white;
-            padding: 8px 20px; border-radius: 8px; font-size: 28px; font-weight: bold; z-index: 3000; display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        /* Header fixed */
+        .fixed-top {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid #222;
         }
 
-        #info-bar {
-            position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 40px;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            z-index: 100; opacity: 0; transition: opacity 0.3s; display: flex; align-items: flex-end; gap: 20px;
-            pointer-events: none;
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
         }
-        #info-bar.show { opacity: 1; }
-        .info-logo { width: 70px; height: 70px; object-fit: contain; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 8px; }
-        .info-details { flex: 1; }
-        .info-title { font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 15px; }
-        .info-num { color: #aaa; font-size: 24px; }
-        .info-epg { font-size: 16px; color: #00e676; margin-top: 5px; font-weight: bold; }
 
-        #tivi-menu {
-            position: absolute; top: 0; left: 0; height: 100%;
-            display: flex; flex-direction: row; z-index: 200;
-            transform: translateX(-100%); transition: transform 0.2s ease-out;
+        .logo { font-size: 24px; font-weight: 800; color: white; }
+        .logo span { color: var(--red); }
+
+        .search-box {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            width: 180px;
         }
-        #tivi-menu.open { transform: translateX(0); }
 
-        #col-groups { 
-            width: 250px; height: 100%; background: var(--bg-dark);
-            border-right: 1px solid rgba(255,255,255,0.05);
-            display: flex; flex-direction: column;
-            margin-left: -250px; 
-            transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        .search-box input {
+            background: none;
+            border: none;
+            color: white;
+            outline: none;
+            font-size: 13px;
+            width: 100%;
+            margin-right: 8px;
         }
-        #tivi-menu.show-groups #col-groups { margin-left: 0; }
 
-        .col-header { padding: 20px; font-size: 18px; font-weight: bold; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .list-container { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 10px 0; }
-        .list-container::-webkit-scrollbar { display: none; }
+        /* Categories */
+        .categories-nav {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 15px 15px;
+            gap: 10px;
+            scrollbar-width: none;
+        }
+        .categories-nav::-webkit-scrollbar { display: none; }
+
+        .cat-item {
+            background: #1a1a1a;
+            color: #bbb;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s;
+            border: 1px solid #333;
+            text-transform: capitalize;
+        }
+
+        .cat-item.active {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        /* Movie Grid */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 15px;
+        }
+
+        .movie-card {
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #222;
+            transition: 0.3s;
+            position: relative;
+            cursor: pointer; /* زێدەکرن بۆ هندێ دیار بیت کو دهێتە کلیک کرن */
+        }
+
+        .movie-card img {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            display: block;
+        }
+
+        .movie-card .info {
+            padding: 8px;
+            font-size: 12px;
+            text-align: center;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         
-        .group-item {
-            padding: 15px 20px; font-size: 16px; color: #ccc; cursor: pointer; transition: 0.1s;
-            display: flex; align-items: center; gap: 10px; border-left: 4px solid transparent;
+        .loading {
+            text-align: center;
+            padding: 50px;
+            grid-column: 1 / -1;
+            color: #888;
         }
-        .group-item.selected { background: var(--tivi-grey); color: white; }
-        .group-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
 
-        #col-channels { 
-            width: 350px; height: 100%; background: var(--bg-dark);
-            display: flex; flex-direction: column; 
-            border-right: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 10px 0 30px rgba(0,0,0,0.7);
+        @media (min-width: 768px) {
+            .movie-grid { grid-template-columns: repeat(6, 1fr); }
         }
-        
-        .ch-item {
-            display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
-            transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02);
-        }
-        .ch-item.selected { background: var(--tivi-grey); }
-        .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
-        .ch-item.playing .ch-name { color: #00e676; } 
-        
-        .ch-num { width: 40px; font-size: 14px; color: #888; font-weight: bold; text-align: center; }
-        .ch-logo { width: 40px; height: 40px; object-fit: contain; margin: 0 15px; }
-        .ch-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        .ch-name { font-size: 16px; font-weight: bold; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ch-epg { font-size: 12px; color: #888; margin-top: 2px; }
-
-        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.2s; }
-        #toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 
-<div id="app-container">
-    <div id="video-layer">
-        <div id="videoContainer">
-            <video id="main-video" playsinline autoplay></video>
-        </div>
-        <div id="loader"><div class="spinner"></div></div>
-    </div>
+    <div class="fixed-top">
+        <header>
+            <div class="logo">DNA<span>MOVIES</span></div>
+            <div class="search-box">
+                <i class="fas fa-search" style="color: #666;"></i>
+                <input type="text" id="movieSearch" placeholder="لێگەریان...">
+            </div>
+        </header>
 
-    <div id="num-indicator"></div>
-
-    <div id="info-bar">
-        <img class="info-logo" id="ib-logo" src="" alt="">
-        <div class="info-details">
-            <div class="info-title"><span class="info-num" id="ib-num">1</span> <span id="ib-name">کەناڵ</span></div>
-            <div class="info-epg">No information</div>
+        <div class="categories-nav" id="categoryList">
+            <span class="cat-item active" data-filter="all">هەمی</span>
         </div>
     </div>
 
-    <div id="tivi-menu">
-        <div id="col-groups">
-            <div class="col-header">گرووپەکان</div>
-            <div class="list-container" id="groups-list"></div>
-        </div>
-        <div id="col-channels">
-            <div class="col-header" id="current-group-title">هەمی</div>
-            <div class="list-container" id="channels-list"></div>
-        </div>
+    <div class="movie-grid" id="movieList">
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i> دئینیت...</div>
     </div>
-    
-    <div id="toast"></div>
-</div>
 
-<script>
-    const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
-    
-    let allChannels = [];
-    let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
-    let filteredChannels = [];
-    
-    let isMenuOpen = false;
-    let showGroups = false;
-    let activeColumn = 'channels';
-    
-    let selGroupIndex = 0;
-    let selChannelIndex = 0;
-    let playGroupIndex = 0;
-    let playChannelIndex = -1;
-    let currentPlayingChannel = null;
+    <script>
+        $(document).ready(function() {
+            const jsonUrl = "https://raw.githubusercontent.com/stvplus1/Hodber/refs/heads/main/m2.json"; 
+            let allMovies = []; // دروستکرنا لیستەکێ بۆ پاراستنا داتایێن فلیمان
 
-    let uiTimer, loadTimer, reconnectTimer, numTimer;
-    let typedNumber = "";
-    window.shakaPlayer = null;
-    let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
+            fetch(jsonUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if(data && data.items) {
+                        processJSON(data.items);
+                    } else {
+                        $('#movieList').html('<div class="loading">داتا د فایلێ دا نەهاتە دیتن.</div>');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching JSON:", error);
+                    $('#movieList').html('<div class="loading">کێشە دئینانا فایلێ JSON دا هەیە.</div>');
+                });
 
-    async function initApp() {
-        try {
-            let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
-            allChannels = await res.json();
-            
-            updateFilteredChannels();
-            
-            if (allChannels.length > 0) {
-                // پشکنینا کەنالێ دوماهیێ (Memory) ب شێوەیەکێ دروستتر
-                let lastChId = localStorage.getItem('last_channel_id');
-                let targetIdx = 0;
-                
-                if (lastChId) {
-                    let foundIdx = filteredChannels.findIndex((c, i) => (c.id ? c.id == lastChId : (allChannels.indexOf(c) + 1) == lastChId));
-                    if (foundIdx !== -1) targetIdx = foundIdx;
-                }
-                
-                selChannelIndex = targetIdx;
-                playChannel(filteredChannels[targetIdx], targetIdx);
-            }
-        } catch (e) {
-            showToast("کێشە د هێنانا کەنالان دا هەیە");
-        }
-    }
+            function processJSON(items) {
+                allMovies = []; // پاقژکرنا لیستێ
+                let groups = new Set();
 
-    function updateFilteredChannels() {
-        let gName = groups[selGroupIndex];
-        document.getElementById('current-group-title').innerText = gName;
-        
-        if (gName === "هەمی") {
-            filteredChannels = allChannels;
-        } else if (gName === "دڵخواز") {
-            filteredChannels = allChannels.filter(c => favChannels.includes(c.id));
-        } else {
-            filteredChannels = allChannels.filter(c => c.group === gName);
-        }
-        
-        if(!isMenuOpen) {
-            selChannelIndex = filteredChannels.findIndex(c => currentPlayingChannel && c.id === currentPlayingChannel.id);
-            if(selChannelIndex === -1) selChannelIndex = 0;
-        } else if (activeColumn === 'groups') {
-            selChannelIndex = 0;
-        }
-    }
-
-    function renderGroups() {
-        const list = document.getElementById('groups-list');
-        list.innerHTML = '';
-        groups.forEach((g, idx) => {
-            let div = document.createElement('div');
-            let isFocused = (activeColumn === 'groups' && idx === selGroupIndex);
-            let isSelected = (activeColumn === 'channels' && idx === selGroupIndex);
-            
-            div.className = `group-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
-            div.id = 'grp-' + idx;
-            div.innerHTML = `<span>${g}</span>`;
-            div.onclick = () => { 
-                selGroupIndex = idx; 
-                showGroups = false; 
-                activeColumn = 'channels'; 
-                updateFilteredChannels(); 
-                updateMenuClasses();
-                renderGroups(); 
-                renderChannels();
-            };
-            list.appendChild(div);
-        });
-        scrollToItem('grp-' + selGroupIndex);
-    }
-
-    function renderChannels() {
-        const list = document.getElementById('channels-list');
-        list.innerHTML = '';
-        
-        if (filteredChannels.length === 0) {
-            list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
-            return;
-        }
-
-        filteredChannels.forEach((ch, idx) => {
-            let div = document.createElement('div');
-            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex);
-            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
-            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
-            
-            // ئەگەر id نەبیت، ڕیزبەندیێ نیشان بدە
-            let displayNum = ch.id || (allChannels.indexOf(ch) + 1);
-
-            div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
-            div.id = 'ch-' + idx;
-            div.innerHTML = `
-                <div class="ch-num">${displayNum}</div>
-                <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
-                <div class="ch-info">
-                    <div class="ch-name">${ch.name}</div>
-                    <div class="ch-epg">No information</div>
-                </div>
-            `;
-            div.onclick = () => { 
-                activeColumn = 'channels';
-                selChannelIndex = idx;
-                playChannel(ch, idx); 
-                toggleMenu(false); 
-            };
-            list.appendChild(div);
-        });
-        scrollToItem('ch-' + selChannelIndex);
-    }
-
-    function scrollToItem(id) {
-        const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
-    }
-
-    function showInfoBar(ch) {
-        if(ch) {
-            document.getElementById('ib-num').innerText = ch.id || (allChannels.indexOf(ch) + 1);
-            document.getElementById('ib-name').innerText = ch.name;
-            document.getElementById('ib-logo').src = ch.logo;
-        }
-        
-        const bar = document.getElementById('info-bar');
-        bar.classList.add('show');
-        clearTimeout(uiTimer);
-        uiTimer = setTimeout(() => {
-            if (!isMenuOpen) bar.classList.remove('show');
-        }, 5000); 
-    }
-
-    function toggleMenu(force, withGroups = false) {
-        isMenuOpen = force !== undefined ? force : !isMenuOpen;
-        const infoBar = document.getElementById('info-bar');
-        
-        if (isMenuOpen) {
-            showGroups = withGroups;
-            activeColumn = showGroups ? 'groups' : 'channels';
-            updateMenuClasses();
-            
-            infoBar.classList.remove('show');
-            selGroupIndex = playGroupIndex;
-            updateFilteredChannels();
-            selChannelIndex = playChannelIndex !== -1 ? playChannelIndex : 0;
-            
-            renderGroups();
-            renderChannels();
-        } else {
-            updateMenuClasses();
-            showInfoBar(currentPlayingChannel); 
-        }
-    }
-
-    function updateMenuClasses() {
-        const menu = document.getElementById('tivi-menu');
-        if (isMenuOpen) {
-            menu.classList.add('open');
-            if (showGroups) menu.classList.add('show-groups');
-            else menu.classList.remove('show-groups');
-        } else {
-            menu.classList.remove('open');
-        }
-    }
-
-    function playChannel(ch, indexInFiltered) {
-        if (!ch) return;
-        currentPlayingChannel = ch;
-        playGroupIndex = selGroupIndex;
-        playChannelIndex = indexInFiltered;
-        
-        // تۆمارکرنا ID یێ کەنالێ ل ناو Memory بۆ ڤەگەڕانێ
-        let channelIdToSave = ch.id ? ch.id : (allChannels.indexOf(ch) + 1);
-        localStorage.setItem('last_channel_id', channelIdToSave);
-
-        showInfoBar(ch);
-        if(isMenuOpen) renderChannels(); 
-
-        const loader = document.getElementById('loader');
-        const videoContainer = document.getElementById('videoContainer');
-        const video = document.getElementById('main-video');
-
-        loader.style.display = 'block';
-        clearTimeout(reconnectTimer);
-
-        if (window.shakaPlayer) {
-            window.shakaPlayer.destroy();
-            window.shakaPlayer = null;
-        }
-
-        if (ch.type !== 'dash') {
-            videoContainer.style.display = 'none'; 
-            if (window.AndroidPlayer) {
-                window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
-            } else {
-                videoContainer.style.display = 'block';
-                if (Hls.isSupported()) {
-                    const hls = new Hls(); hls.loadSource(ch.url); hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                    hls.on(Hls.Events.ERROR, (event, data) => {
-                        if (data.fatal) {
-                            reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
-                        }
+                items.forEach((item, index) => {
+                    let movieGroups = (item.keys && item.keys.length > 0) ? item.keys : ['others'];
+                    
+                    movieGroups.forEach(g => {
+                        if(g) groups.add(g.toLowerCase());
                     });
-                } else { video.src = ch.url; video.play(); }
+
+                    // زێدەکرنا فلیمی بۆ ناو لیستا گشتی
+                    allMovies.push({
+                        title: item.title || 'Unknown',
+                        poster: item.poster || 'https://via.placeholder.com/200x300?text=No+Image',
+                        url: item.url || '#',
+                        referer: item.referer || '', // ئەگەر referer هەبیت
+                        group: movieGroups.map(g => g.toLowerCase()).join(' ')
+                    });
+                });
+
+                renderData(allMovies, Array.from(groups).sort());
             }
-            setTimeout(() => { loader.style.display = 'none'; }, 1500);
-        } else {
-            videoContainer.style.display = 'block'; 
-            if (window.AndroidPlayer) {
-                window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); 
+
+            function renderData(movies, groups) {
+                let catHtml = '<span class="cat-item active" data-filter="all">هەمی</span>';
+                groups.forEach(group => {
+                    catHtml += `<span class="cat-item" data-filter="${group}">${group}</span>`;
+                });
+                $('#categoryList').html(catHtml);
+
+                let movieHtml = '';
+                movies.forEach((movie, index) => {
+                    // ل ڤێرە لینکا <a> هاتە لادان و فەنکشنا playMovie هاتە زێدەکرن ب ڕێکا onclick
+                    movieHtml += `
+                    <div class="movie-card" data-genre="${movie.group}" title="${movie.title}" onclick="playMovie(${index})">
+                        <img src="${movie.poster}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
+                        <div class="info">${movie.title}</div>
+                    </div>`;
+                });
+                $('#movieList').html(movieHtml);
             }
-            shaka.polyfill.installAll();
-            window.shakaPlayer = new shaka.Player(video);
-            if (ch.drmKeyId && ch.drmKey) {
-                window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
-            }
-            window.shakaPlayer.load(ch.url).then(() => {
-                video.play(); loader.style.display = 'none';
-            }).catch(e => {
-                loader.style.display = 'none';
-                reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
+
+            $('#movieSearch').on('input', function() {
+                var value = $(this).val().toLowerCase();
+                $('.movie-card').each(function() {
+                    var title = $(this).attr('title').toLowerCase();
+                    $(this).toggle(title.indexOf(value) > -1);
+                });
             });
-        }
-    }
 
-    // گەڕان ب ڕێکا ژمارەیێن لێدایی ل سەر کۆنترۆلێ باشترکرن
-    function handleNumberInput(digit) {
-        clearTimeout(numTimer);
-        typedNumber += digit;
-        
-        const ind = document.getElementById('num-indicator');
-        ind.innerText = typedNumber;
-        ind.style.display = 'block';
-        
-        numTimer = setTimeout(() => {
-            let targetId = parseInt(typedNumber);
-            typedNumber = "";
-            ind.style.display = 'none';
-            
-            // گەڕان د ناڤ هەمی کەنالان دا ب ID یان ژمارەیا ڕیزبەندیێ
-            let globalIdx = allChannels.findIndex((c, i) => (c.id ? c.id == targetId : (i + 1) == targetId));
-            
-            if (globalIdx !== -1) {
-                let foundCh = allChannels[globalIdx];
-                // ڤەگۆهاستنا گرووپێ گونجایی
-                selGroupIndex = groups.indexOf(foundCh.group) !== -1 ? groups.indexOf(foundCh.group) : 0;
-                updateFilteredChannels();
-                
-                let filteredIdx = filteredChannels.findIndex((c, i) => (c.id ? c.id == targetId : (allChannels.indexOf(c) + 1) == targetId));
-                if (filteredIdx !== -1) {
-                    selChannelIndex = filteredIdx;
-                    playChannel(foundCh, filteredIdx);
-                }
-            } else {
-                showToast("کەناڵ نەهاتە دیتن");
-            }
-        }, 1200);
-    }
+            $(document).on('click', '.cat-item', function() {
+                $('.cat-item').removeClass('active');
+                $(this).addClass('active');
 
-    document.addEventListener('keydown', (e) => {
-        const key = e.keyCode;
-        const keyChar = e.key;
-        
-        if (/^\d$/.test(keyChar)) {
-            handleNumberInput(keyChar);
-            e.preventDefault();
-            return;
-        }
+                var filter = $(this).attr('data-filter');
 
-        if ([8, 27, 10009, 461].includes(key)) {
-            if (isMenuOpen) { 
-                if (showGroups) {
-                    showGroups = false; activeColumn = 'channels';
-                    updateMenuClasses(); renderGroups(); renderChannels();
+                if (filter === 'all') {
+                    $('.movie-card').fadeIn(300);
                 } else {
-                    toggleMenu(false);
+                    $('.movie-card').hide();
+                    $('.movie-card').filter(function() {
+                        var genres = $(this).attr('data-genre').split(' ');
+                        return genres.includes(filter);
+                    }).fadeIn(300);
                 }
-                e.preventDefault(); return; 
-            }
-        }
+            });
 
-        if (isMenuOpen) {
-            e.preventDefault();
-            if (activeColumn === 'channels') {
-                switch(key) {
-                    case 38: // سەرێ
-                        if (selChannelIndex > 0) selChannelIndex--;
-                        renderChannels(); break;
-                    case 40: // خوارێ
-                        if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
-                        renderChannels(); break;
-                    case 37: // چەپ
-                        showGroups = true; activeColumn = 'groups'; 
-                        updateMenuClasses(); renderGroups(); renderChannels(); break;
-                    case 39: // ڕاست
-                        toggleMenu(false); break;
-                    case 13: // OK
-                        playChannel(filteredChannels[selChannelIndex], selChannelIndex); 
-                        toggleMenu(false); break;
+            // فەنکشنا لێدانا فلیمان ل سەر ExoPlayer یێ ئەندرۆیدێ
+            window.playMovie = function(index) {
+                const movie = allMovies[index];
+                if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
+                    // هنارتنا زانیاریان بۆ ئەندرۆید
+                    window.AndroidPlayer.playStream(movie.url, 'hls', movie.referer || "", "", "");
+                } else {
+                    // ئەگەر ل سەر وێبگەرێ بوو و ئەندرۆید نەبوو
+                    window.location.href = movie.url;
                 }
-            } else if (activeColumn === 'groups') {
-                switch(key) {
-                    case 38: // سەرێ
-                        if (selGroupIndex > 0) selGroupIndex--;
-                        updateFilteredChannels(); renderGroups(); break;
-                    case 40: // خوارێ
-                        if (selGroupIndex < groups.length - 1) selGroupIndex++;
-                        updateFilteredChannels(); renderGroups(); break;
-                    case 39: 
-                    case 13:
-                        showGroups = false; activeColumn = 'channels'; 
-                        updateMenuClasses(); renderGroups(); renderChannels(); break;
-                    case 37:
-                        toggleMenu(false); break;
-                }
-            }
-        } else {
-            if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
-            
-            switch(key) {
-                // پێچەوانەکرنا دوگمەیان
-                case 38: // UP (سەرێ) -> کەنالێ داهاتی (Next Channel) ب بەرەڤ سەرێ دچیت
-                    if (playChannelIndex < filteredChannels.length - 1) {
-                        playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
-                    }
-                    break;
-                case 40: // DOWN (خوارێ) -> کەنالێ پێشتر (Previous Channel) ب بەرەڤ خوارێ دچیت
-                    if (playChannelIndex > 0) {
-                        playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
-                    }
-                    break;
-                case 37: 
-                case 13: 
-                    toggleMenu(true, false); break;
-                case 39: 
-                    showInfoBar(currentPlayingChannel); break;
-            }
-        }
-    });
-
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 3000);
-    }
-
-    initApp();
-
-</script>
+            };
+        });
+    </script>
 </body>
 </html>
