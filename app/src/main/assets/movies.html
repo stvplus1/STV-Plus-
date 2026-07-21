@@ -13,122 +13,68 @@
 
         /* Header fixed */
         .fixed-top {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(5, 5, 5, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            border-bottom: 1px solid #222;
+            position: fixed; top: 0; width: 100%;
+            background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
+            z-index: 1000; border-bottom: 1px solid #222;
         }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-        }
-
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
         .logo { font-size: 24px; font-weight: 800; color: white; }
         .logo span { color: var(--red); }
 
         .search-box {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 6px 12px;
-            display: flex;
-            align-items: center;
-            width: 180px;
+            background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+            padding: 6px 12px; display: flex; align-items: center; width: 180px;
         }
-
         .search-box input {
-            background: none;
-            border: none;
-            color: white;
-            outline: none;
-            font-size: 13px;
-            width: 100%;
-            margin-right: 8px;
+            background: none; border: none; color: white; outline: none;
+            font-size: 13px; width: 100%; margin-right: 8px;
         }
 
         /* Categories */
         .categories-nav {
-            display: flex;
-            overflow-x: auto;
-            padding: 10px 15px 15px;
-            gap: 10px;
-            scrollbar-width: none;
+            display: flex; overflow-x: auto; padding: 10px 15px 15px;
+            gap: 10px; scrollbar-width: none;
         }
         .categories-nav::-webkit-scrollbar { display: none; }
 
         .cat-item {
-            background: #1a1a1a;
-            color: #bbb;
-            padding: 6px 18px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: 0.3s;
-            border: 1px solid #333;
+            background: #1a1a1a; color: #bbb; padding: 6px 18px;
+            border-radius: 20px; font-size: 13px; cursor: pointer;
+            white-space: nowrap; transition: 0.3s; border: 1px solid #333;
             text-transform: capitalize;
         }
-
-        .cat-item.active {
-            background: var(--red);
-            color: white;
-            border-color: var(--red);
-        }
+        .cat-item.active { background: var(--red); color: white; border-color: var(--red); }
 
         /* Movie Grid */
-        .movie-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            padding: 15px;
-        }
-
+        .movie-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
         .movie-card {
-            background: var(--card);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #222;
-            transition: 0.3s;
-            position: relative;
-            cursor: pointer; 
+            background: var(--card); border-radius: 12px; overflow: hidden;
+            border: 1px solid #222; transition: 0.3s; position: relative; cursor: pointer;
         }
-
-        .movie-card img {
-            width: 100%;
-            aspect-ratio: 2/3;
-            object-fit: cover;
-            display: block;
-        }
-
+        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
         .movie-card .info {
-            padding: 8px;
-            font-size: 12px;
-            text-align: center;
-            font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            padding: 8px; font-size: 12px; text-align: center;
+            font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         
-        .loading {
-            text-align: center;
-            padding: 50px;
-            grid-column: 1 / -1;
-            color: #888;
-        }
+        .loading { text-align: center; padding: 50px; grid-column: 1 / -1; color: #888; }
 
-        @media (min-width: 768px) {
-            .movie-grid { grid-template-columns: repeat(6, 1fr); }
+        @media (min-width: 768px) { .movie-grid { grid-template-columns: repeat(6, 1fr); } }
+
+        /* پەیاما ئاگادارکرنێ بۆ دەمێ کلیک کرنێ */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(220, 38, 38, 0.95); color: white; padding: 10px 25px;
+            border-radius: 8px; font-weight: bold; font-size: 14px;
+            z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none;
         }
+        #toast.show { opacity: 1; }
     </style>
 </head>
 <body>
+
+    <div id="toast"></div>
 
     <div class="fixed-top">
         <header>
@@ -195,9 +141,8 @@
 
                 let movieHtml = '';
                 movies.forEach(movie => {
-                    // زانیاریێن ڤیدیۆیێ دکەینە د ناو تاگێ html ب ڕێکا data-attribute
                     movieHtml += `
-                    <div class="movie-card" data-genre="${movie.group}" data-url="${movie.url}" data-referer="${movie.referer}" title="${movie.title}">
+                    <div class="movie-card" data-genre="${movie.group}" data-url="${movie.url}" data-referer="${movie.referer}" title="${movie.title}" onclick="openMovie(this)">
                         <img src="${movie.poster}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
                         <div class="info">${movie.title}</div>
                     </div>`;
@@ -230,19 +175,30 @@
                 }
             });
 
-            // کلیک کرنا فلیمی و ڤەکرنا پلەیەرێ ئەندرۆیدێ
-            $(document).on('click', '.movie-card', function() {
-                let url = $(this).attr('data-url');
-                let referer = $(this).attr('data-referer') || "";
+            // فەنکشنا ڤەکرنا پلەیەرێ ئەندرۆیدێ
+            window.openMovie = function(el) {
+                let url = el.getAttribute('data-url');
+                let referer = el.getAttribute('data-referer') || "";
+                let title = el.getAttribute('title') || "";
                 
+                // نیشاندانا نامەیەکێ دا بزانین کلیک یا کار دکەت
+                let toast = document.getElementById('toast');
+                toast.innerText = "ڤەکرنا: " + title;
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 3000);
+
+                // دیارکرنا جۆرێ ڤیدیۆیێ بۆ ئەندرۆید پلەیەری
+                let type = url.includes('.m3u8') ? 'hls' : 'mp4';
+
                 if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
-                    window.AndroidPlayer.playStream(url, 'hls', referer, "", "");
+                    window.AndroidPlayer.playStream(url, type, referer, "", "");
                 } else if (window.Android && window.Android.playStream) {
-                    window.Android.playStream(url, 'hls', referer, "", "");
+                    window.Android.playStream(url, type, referer, "", "");
                 } else {
+                    // ئەگەر پلەیەرێ ئەندرۆید نەبوو (وەک کرۆم) دێ ڕاستەوخۆ ڤەکەت
                     window.location.href = url;
                 }
-            });
+            };
         });
     </script>
 </body>
