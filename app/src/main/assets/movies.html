@@ -96,7 +96,7 @@
             border: 1px solid #222;
             transition: 0.3s;
             position: relative;
-            cursor: pointer; /* زێدەکرن بۆ هندێ دیار بیت کو دهێتە کلیک کرن */
+            cursor: pointer; 
         }
 
         .movie-card img {
@@ -151,7 +151,6 @@
     <script>
         $(document).ready(function() {
             const jsonUrl = "https://raw.githubusercontent.com/stvplus1/Hodber/refs/heads/main/m2.json"; 
-            let allMovies = []; // دروستکرنا لیستەکێ بۆ پاراستنا داتایێن فلیمان
 
             fetch(jsonUrl)
                 .then(response => response.json())
@@ -168,27 +167,23 @@
                 });
 
             function processJSON(items) {
-                allMovies = []; // پاقژکرنا لیستێ
+                let movies = [];
                 let groups = new Set();
 
-                items.forEach((item, index) => {
+                items.forEach(item => {
                     let movieGroups = (item.keys && item.keys.length > 0) ? item.keys : ['others'];
-                    
-                    movieGroups.forEach(g => {
-                        if(g) groups.add(g.toLowerCase());
-                    });
+                    movieGroups.forEach(g => { if(g) groups.add(g.toLowerCase()); });
 
-                    // زێدەکرنا فلیمی بۆ ناو لیستا گشتی
-                    allMovies.push({
+                    movies.push({
                         title: item.title || 'Unknown',
                         poster: item.poster || 'https://via.placeholder.com/200x300?text=No+Image',
                         url: item.url || '#',
-                        referer: item.referer || '', // ئەگەر referer هەبیت
+                        referer: item.referer || '',
                         group: movieGroups.map(g => g.toLowerCase()).join(' ')
                     });
                 });
 
-                renderData(allMovies, Array.from(groups).sort());
+                renderData(movies, Array.from(groups).sort());
             }
 
             function renderData(movies, groups) {
@@ -199,10 +194,10 @@
                 $('#categoryList').html(catHtml);
 
                 let movieHtml = '';
-                movies.forEach((movie, index) => {
-                    // ل ڤێرە لینکا <a> هاتە لادان و فەنکشنا playMovie هاتە زێدەکرن ب ڕێکا onclick
+                movies.forEach(movie => {
+                    // زانیاریێن ڤیدیۆیێ دکەینە د ناو تاگێ html ب ڕێکا data-attribute
                     movieHtml += `
-                    <div class="movie-card" data-genre="${movie.group}" title="${movie.title}" onclick="playMovie(${index})">
+                    <div class="movie-card" data-genre="${movie.group}" data-url="${movie.url}" data-referer="${movie.referer}" title="${movie.title}">
                         <img src="${movie.poster}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
                         <div class="info">${movie.title}</div>
                     </div>`;
@@ -235,17 +230,19 @@
                 }
             });
 
-            // فەنکشنا لێدانا فلیمان ل سەر ExoPlayer یێ ئەندرۆیدێ
-            window.playMovie = function(index) {
-                const movie = allMovies[index];
+            // کلیک کرنا فلیمی و ڤەکرنا پلەیەرێ ئەندرۆیدێ
+            $(document).on('click', '.movie-card', function() {
+                let url = $(this).attr('data-url');
+                let referer = $(this).attr('data-referer') || "";
+                
                 if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
-                    // هنارتنا زانیاریان بۆ ئەندرۆید
-                    window.AndroidPlayer.playStream(movie.url, 'hls', movie.referer || "", "", "");
+                    window.AndroidPlayer.playStream(url, 'hls', referer, "", "");
+                } else if (window.Android && window.Android.playStream) {
+                    window.Android.playStream(url, 'hls', referer, "", "");
                 } else {
-                    // ئەگەر ل سەر وێبگەرێ بوو و ئەندرۆید نەبوو
-                    window.location.href = movie.url;
+                    window.location.href = url;
                 }
-            };
+            });
         });
     </script>
 </body>
