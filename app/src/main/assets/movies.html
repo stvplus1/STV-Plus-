@@ -9,12 +9,12 @@
     <style>
         :root { --red: #ff0000; --bg: #050505; --card: #121212; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: var(--bg); color: #eee; overflow-x: hidden; }
+        
+        /* دێ باکگراوەندی دێینە سەر html ژی دا ب تەمامی پاقژ ببیت ل دەمێ لێدانێ */
+        html, body { background: var(--bg); color: #eee; overflow-x: hidden; width: 100%; height: 100%; }
 
-        /* بەشێ لیستا فلیمان */
-        #movies-container { padding-top: 130px; transition: 0.3s; }
+        #movies-container { padding-top: 130px; transition: 0.3s; width: 100%; min-height: 100vh; }
 
-        /* Header fixed */
         .fixed-top {
             position: fixed; top: 0; width: 100%;
             background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
@@ -34,7 +34,6 @@
             font-size: 13px; width: 100%; margin-right: 8px;
         }
 
-        /* Categories */
         .categories-nav {
             display: flex; overflow-x: auto; padding: 10px 15px 15px;
             gap: 10px; scrollbar-width: none;
@@ -49,11 +48,10 @@
         }
         .cat-item.active { background: var(--red); color: white; border-color: var(--red); }
 
-        /* Movie Grid */
         .movie-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
         .movie-card {
             background: var(--card); border-radius: 12px; overflow: hidden;
-            border: 1px solid #222; transition: 0.3s; position: relative; cursor: pointer;
+            border: 1px solid #222; transition: 0.3s; position: relative; cursor: pointer; outline: none;
         }
         .movie-card:hover, .movie-card:focus { border-color: var(--red); transform: scale(1.02); }
         .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
@@ -66,7 +64,6 @@
 
         @media (min-width: 768px) { .movie-grid { grid-template-columns: repeat(6, 1fr); } }
 
-        /* پەیاما ئاگادارکرنێ */
         #toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(220, 38, 38, 0.95); color: white; padding: 10px 25px;
@@ -75,10 +72,9 @@
         }
         #toast.show { opacity: 1; }
 
-        /* بەشێ پلەیەرێ ئەندرۆیدێ (Overlay) */
         #player-container {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: transparent; z-index: 9000;
+            background: transparent !important; z-index: 9000;
         }
         
         .back-btn {
@@ -86,16 +82,15 @@
             color: white; border: 2px solid rgba(255,255,255,0.2); padding: 10px 25px;
             border-radius: 10px; font-size: 18px; cursor: pointer; font-weight: bold;
             display: flex; align-items: center; gap: 10px; transition: 0.2s; z-index: 9001;
-            direction: ltr;
+            direction: ltr; outline: none;
         }
-        .back-btn:hover, .back-btn:focus { background: var(--red); border-color: var(--red); outline: none; }
+        .back-btn:hover, .back-btn:focus { background: var(--red); border-color: var(--red); }
     </style>
 </head>
 <body>
 
     <div id="toast"></div>
 
-    <!-- بەشێ سەرەکی یێ لیستا فلیمان -->
     <div id="movies-container">
         <div class="fixed-top">
             <header>
@@ -116,7 +111,6 @@
         </div>
     </div>
 
-    <!-- بەشێ کۆنترۆلا پلەیەری ل دەمێ کارپێکرنێ -->
     <div id="player-container">
         <button class="back-btn" onclick="closeMovie()" id="btnBack">
             <i class="fas fa-arrow-left"></i> ڤەگەڕان
@@ -203,31 +197,30 @@
                 }
             });
 
-            // فەنکشنا ڤەکرنا فلیمی و شاردنەڤەیا لیستان
             window.openMovie = function(el) {
                 let url = el.getAttribute('data-url');
                 let referer = el.getAttribute('data-referer') || "";
                 let title = el.getAttribute('title') || "";
                 
-                // پەیاما ئاگادارکرنێ
                 let toast = document.getElementById('toast');
                 toast.innerText = "لێدانا: " + title;
                 toast.classList.add('show');
                 setTimeout(() => { toast.classList.remove('show'); }, 3000);
 
-                // **ئەڤەیە چارەسەریا سەرەکی:** شاردنەڤەیا لیستێ و شەفافکرنا باکگراوەندی
-                document.body.style.background = "transparent";
-                document.getElementById('movies-container').style.display = "none";
-                document.getElementById('player-container').style.display = "block";
-                document.getElementById('btnBack').focus(); // فۆکەسکرنا دوگمەیا ڤەگەڕانێ
+                // ئامادەکرنا شاشەیێ: هەردوو html و body دکەینە شەفاف
+                $('html, body').css('background', 'transparent');
+                $('#movies-container').hide();
+                $('#player-container').show();
+                $('#btnBack').focus();
 
-                // دیارکرنا جۆرێ ڤیدیۆیێ بۆ ئەندرۆید پلەیەری
-                let type = url.includes('.m3u8') ? 'hls' : '';
+                // دیارکرنا جۆرێ ڤیدیۆیێ بۆ ئەندرۆید پلەیەری (چارەسەریا سەرەکی ئەڤەیە)
+                let type = 'default'; // بۆ فلیمان (mp4, mkv) دڤێت default بیت
+                if (url.includes('.m3u8')) type = 'hls';
+                else if (url.includes('.mpd')) type = 'dash';
 
                 if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
                     window.AndroidPlayer.playStream(url, type, referer, "", "");
                 } else {
-                    // ئەگەر ل وێبگەرێ بوو، پلەیەرەکێ سادە دئینیتە سەر شاشەیێ
                     let pc = document.getElementById('player-container');
                     if(!document.getElementById('html-player')) {
                         pc.innerHTML += `<video id="html-player" src="${url}" controls autoplay style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;"></video>`;
@@ -235,26 +228,25 @@
                 }
             };
 
-            // فەنکشنا گرتنا فلیمی و زڤڕینەڤە بۆ لیستێ
             window.closeMovie = function() {
                 if (window.AndroidPlayer && window.AndroidPlayer.playStream) {
-                    window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); // ڕاگرتنا ڤیدیۆیێ
+                    // ڤالاکرنا پلەیەری
+                    window.AndroidPlayer.playStream("about:blank", "default", "", "", ""); 
                 }
                 let htmlPlayer = document.getElementById('html-player');
                 if (htmlPlayer) htmlPlayer.remove();
 
-                // زڤڕاندنەڤەیا ڕەنگ و لیستا فلیمان
-                document.body.style.background = "var(--bg)";
-                document.getElementById('movies-container').style.display = "block";
-                document.getElementById('player-container').style.display = "none";
+                // زڤڕاندنەڤەیا ڕەنگێ شاشەیێ بۆ ڕەش و نیشاندانا فلیمان
+                $('html, body').css('background', 'var(--bg)');
+                $('#movies-container').show();
+                $('#player-container').hide();
             };
 
-            // کۆنترۆلا دوگمەیا 'Back' یا کۆنترۆلێ (بۆ تیڤی بۆکسێ)
             document.addEventListener('keydown', function(e) {
                 if ([8, 27, 10009, 461].includes(e.keyCode)) {
                     if (document.getElementById('player-container').style.display === 'block') {
                         closeMovie();
-                        e.preventDefault(); // نەهێلە ژ بەرنامەی دەرکەڤیت
+                        e.preventDefault(); 
                     }
                 }
             });
