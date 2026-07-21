@@ -1,425 +1,312 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>STv+ Ultra Fast UI</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        :root { --accent: #8b5cf6; --bg: transparent; }
-        body { margin: 0; background: transparent; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: manipulation; }
+        :root { 
+            --green: #00e676; /* ڕەنگێ کەسک یێ سەرەکی وەکو ڤیدیۆیێ */
+            --bg-menu: rgba(12, 12, 12, 0.95);
+            --bg-bar: rgba(10, 10, 10, 0.95);
+        }
         
-        .player-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: transparent; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background: transparent; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: none; }
+        
+        #app-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
         
         /* شاشەیا ڤیدیۆیێ ل پشتەڤە */
-        .video-section { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: transparent; }
+        #video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: transparent; display: flex; justify-content: center; align-items: center; }
+        video { width: 100%; height: 100%; object-fit: contain; background: transparent; outline: none; }
         
-        /* دیزاینا نوی یا لیستا کەنالان (تارمایی ل خوارێ) */
-        .list-section { 
-            position: absolute; bottom: -100%; left: 0; width: 100%; 
-            background: linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
-            z-index: 2000; padding-top: 60px; padding-bottom: 20px;
-            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-            display: flex; flex-direction: column; gap: 15px;
-            will-change: transform;
+        /* لۆدەری کەسک یێ ناوەڕاستێ */
+        #loader { 
+            position: absolute; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center;
         }
-        .list-section.active { transform: translateY(-100%); }
+        .spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: var(--green);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        #load-num { position: absolute; font-size: 14px; font-weight: bold; color: white; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* بەشێ گرووپان (کەتەگۆری) */
-        .groups-container {
-            display: flex; flex-direction: row; gap: 12px; padding: 0 40px;
-            overflow-x: auto; scrollbar-width: none; direction: rtl; align-items: center;
+        /* باری زانیاریان ل خوارێ (Bottom Bar) */
+        #bottom-bar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); 
+            width: 90%; max-width: 800px; background: var(--bg-bar); border-radius: 12px;
+            border: 1px solid #333; display: flex; align-items: center; padding: 12px 20px;
+            z-index: 100; transition: transform 0.2s ease-out, opacity 0.2s; opacity: 0; direction: ltr;
         }
-        .groups-container::-webkit-scrollbar { display: none; }
+        #bottom-bar.show { transform: translateX(-50%) translateY(0); opacity: 1; }
         
-        .group-item {
-            padding: 10px 20px; border-radius: 30px; font-size: 14px; font-weight: bold;
-            cursor: pointer; transition: 0.15s; background: rgba(255,255,255,0.1);
-            color: #aaa; border: 2px solid transparent; display: flex; align-items: center; gap: 8px;
-            white-space: nowrap;
-        }
-        .group-item i { font-size: 16px; }
-        .group-item.active { 
-            background: var(--accent); color: white; 
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-        }
+        .bb-num { color: var(--green); font-size: 20px; font-weight: bold; min-width: 40px; text-align: left; }
+        .bb-logo { width: 45px; height: 45px; object-fit: contain; margin: 0 15px; border-radius: 6px; }
+        .bb-name { flex: 1; font-size: 18px; font-weight: bold; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bb-hd { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
 
-        .channels-area { padding: 10px 0; }
-        .menu-header { display: none; }
-
-        .channel-list { 
-            display: flex; flex-direction: row; gap: 15px; padding: 20px 40px; 
-            overflow-x: auto; scrollbar-width: none; direction: ltr; align-items: center; 
+        /* مینیویا چەپێ (Left Menu) */
+        #left-menu {
+            position: absolute; top: 0; left: 0; height: 100%; width: 280px;
+            background: var(--bg-menu); border-right: 1px solid #222; z-index: 200;
+            transform: translateX(-100%); transition: transform 0.15s ease-out;
+            display: flex; flex-direction: column; direction: ltr;
         }
-        .channel-list::-webkit-scrollbar { display: none; }
+        #left-menu.open { transform: translateX(0); }
         
-        /* کارتا کەنالی */
-        .channel-item {
-            width: 140px; height: 110px; flex-shrink: 0; background: #111; 
-            border-radius: 16px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; 
-            text-decoration: none; border: 2px solid rgba(255,255,255,0.05);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            position: relative; overflow: hidden; will-change: transform;
-        }
-        .channel-item.focused { 
-            transform: scale(1.15) translateY(-5px); 
-            border-color: var(--accent); 
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.6); 
-            background: #1a1a1a; z-index: 10;
-        }
+        .menu-header { padding: 15px; background: rgba(0,0,0,0.5); border-bottom: 1px solid #222; font-weight: bold; display: flex; justify-content: space-between; align-items: center; color: var(--green); }
         
-        .channel-logo { width: 50px; height: 50px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
-        .channel-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #channel-list { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding: 10px 5px; }
+        #channel-list::-webkit-scrollbar { display: none; }
         
-        .channel-name { font-size: 12px; font-weight: bold; color: white; text-align: center; width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ch-id { position: absolute; top: 5px; left: 8px; font-size: 10px; color: #888; font-weight: bold; }
-
-        .ch-actions { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: space-around; padding: 5px 0; }
-        .ch-action-btn { background: none; border: none; font-size: 14px; cursor: pointer; padding: 5px; transition: 0.1s; }
-        .btn-del { color: #ef4444; } .btn-move { color: #eab308; } .btn-edit { color: #fff; }
-
-        .overlay-ui {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 25px 40px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            z-index: 1000; pointer-events: none; opacity: 0; transition: 0.2s;
-            display: flex; align-items: flex-start; justify-content: space-between; box-sizing: border-box;
+        /* دیزاینا لیستا کەنالان */
+        .ch-item {
+            display: flex; align-items: center; padding: 8px 12px; margin-bottom: 5px;
+            border-radius: 8px; border: 2px solid transparent; cursor: pointer;
+            transition: 0.1s; background: transparent;
         }
-        .overlay-ui.visible { opacity: 1; }
+        /* چوارچێوەیێ کەسک ل دەمێ هاتنە سەر */
+        .ch-item.focused { border-color: var(--green); background: rgba(0, 230, 118, 0.08); }
+        .ch-item.playing { background: rgba(255, 255, 255, 0.05); }
         
-        .ch-display { 
-            display: flex; align-items: center; gap: 12px; direction: ltr; 
-            background: rgba(10, 10, 10, 0.7); padding: 10px 20px;
-            border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .ch-display-logo { width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; }
-        .ch-display-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .ch-display-info { text-align: left; }
-        .ch-display-info h1 { margin: 0 0 5px 0; font-size: 20px; font-weight: bold; color: white; display: flex; align-items: center; gap: 10px; }
-        #uiNum { color: var(--accent); font-size: 18px; }
-        .live-badge { background: #ef4444; color: white; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+        .ch-item-num { font-size: 12px; color: #888; font-weight: bold; min-width: 25px; text-align: right; margin-right: 10px; }
+        .ch-item-logo { width: 35px; height: 35px; object-fit: contain; margin-right: 12px; }
+        .ch-item-name { font-size: 14px; font-weight: bold; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .controls-bar { display: flex; gap: 10px; pointer-events: auto; direction: ltr; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 30px; }
-        .controls-bar button {
-            background: transparent; border: none; color: white; font-size: 20px; width: 45px; height: 45px;
-            border-radius: 50%; cursor: pointer; transition: 0.1s; display: flex; align-items: center; justify-content: center;
-        }
-        .controls-bar button:hover, .controls-bar button:focus { background: rgba(255, 255, 255, 0.15); outline: none; }
-        .controls-bar button.focused { background: var(--accent) !important; color: white; transform: scale(1.15); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5); }
-
-        .toast-msg {
-            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(220, 38, 38, 0.9); color: white; padding: 12px 30px;
-            border-radius: 12px; z-index: 9999; font-weight: bold; font-size: 15px;
-            opacity: 0; transition: 0.3s; pointer-events: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .toast-msg.show { opacity: 1; }
-        .num-indicator {
-            position: absolute; top: 30px; right: 30px; background: var(--accent); color: white; padding: 15px 30px; border-radius: 12px; font-size: 38px;
-            font-weight: bold; z-index: 3000; display: none; box-shadow: 0 0 20px rgba(139,92,246,0.5);
-        }
-
-        /* پلەیەر و لۆدەر (هەمی بوونە شەفاف) */
-        .video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 1; display: flex; justify-content: center; align-items: center; }
-        .vid-normal { object-fit: contain !important; } .vid-stretch { object-fit: fill !important; } .vid-zoom { object-fit: cover !important; }
-        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: transparent; }
-        #embedPlayer { width: 100%; height: 100%; border: none; background: transparent; pointer-events: auto; }
-        
-        .loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border: 4px solid rgba(255, 0, 0, 0.2); border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; z-index: 20; display: none; }
-        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-        #error-message { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.8); color: #fff; padding: 20px 30px; border-radius: 12px; border: 1px solid red; font-size: 16px; font-weight: bold; text-align: center; z-index: 20; }
-        #embedWrapper { position: relative; width: 100%; height: 100%; display: none; z-index: 2;}
-
-        .add-ch-overlay, .quality-overlay, .audio-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 6000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.2s; }
-        .add-ch-overlay.active, .quality-overlay.active, .audio-overlay.active { opacity: 1; visibility: visible; }
-        .add-ch-modal, .quality-modal, .audio-modal { background: #141414; width: 90%; max-width: 400px; border-radius: 16px; padding: 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); }
-        .add-ch-header, .quality-header, .audio-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: white; border-bottom: 1px solid #333; padding-bottom: 15px; display: flex; gap:10px; align-items: center; }
-        .add-ch-body input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #333; background: #0a0a0a; color: white; box-sizing: border-box; }
-        .add-ch-btns { display: flex; gap: 10px; margin-top: 10px; }
-        .add-ch-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
-        .save-btn { background: var(--accent); color: white; } .cancel-btn { background: #333; color: white; }
-        .quality-list, .audio-list { max-height: 50vh; overflow-y: auto; direction: ltr;}
-        .quality-item, .audio-item { padding: 15px 20px; display: flex; justify-content: space-between; cursor: pointer; color: white; transition: 0.1s;}
-        .quality-item.focused, .audio-item.focused { background: rgba(255,255,255,0.1); border-left: 3px solid var(--accent); }
-        .quality-item i, .audio-item i { display: none; }
-        .quality-item.active i, .audio-item.active i { display: block; color: var(--accent); }
+        /* پەیاما ئاگادارکرنێ */
+        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.2s; pointer-events: none; }
+        #toast.show { opacity: 1; }
     </style>
+</head>
+<body>
 
+<div id="app-container">
+    <div id="video-layer">
+        <!-- پلەیەرێ تاقی بۆ سەر وێبگەرێ (دێ ل سەر مۆبایلێ ئەندرۆید پلەیەر کار کەت) -->
+        <video id="main-video" playsinline autoplay></video>
+        <div id="loader">
+            <div class="spinner"></div>
+            <span id="load-num">0</span>
+        </div>
+    </div>
 
+    <div id="bottom-bar">
+        <div class="bb-num" id="bb-num">01</div>
+        <img class="bb-logo" id="bb-logo" src="" alt="logo">
+        <div class="bb-name" id="bb-name">ناوی کەناڵ</div>
+        <div class="bb-hd">HD</div>
+    </div>
 
-
-
-
-
-
-
-
-
-
+    <div id="left-menu">
+        <div class="menu-header">
+            <span>بەشەکان</span>
+            <span id="cat-name" style="color: white; font-size: 14px;">هەمی</span>
+        </div>
+        <div id="channel-list"></div>
+    </div>
+    
+    <div id="toast"></div>
+</div>
 
 <script>
-    const ONLINE_CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
-
-    let allChannels = []; 
-    let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
-    const groupIcons = {
-        "هەمی": "fa-layer-group", "دڵخواز": "fa-heart", "تایبەت": "fa-star", "کوردستان": "fa-mountain-sun",
-        "تورکی": "fa-moon", "عەرەبی": "fa-globe", "ئاینی": "fa-book-quran", "منداڵان": "fa-child-reaching",
-        "وەرزشی": "fa-futbol", "OSN": "fa-film"
-    };
-
-    let filteredChannels = [];
-    let currentGroup = "هەمی", isMenuOpen = false, isQualityOpen = false, isAudioOpen = false;
-    let uiTimer, focusedIndex = 0;
-    let lastTap = 0, numInput = "", numTimer;
-    let okPressTimer, isLongPress = false;
-    let rightPressTimer, isRightLongPress = false;
-    let isControlFocused = false;
-    let focusedControlIndex = 0, focusedQualityIndex = 0, qualityLevelsCount = 0;
-    let focusedAudioIndex = 0, audioTracksCount = 0;
-
-    let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
-    let currentPlayingChannel = null;
-    let isEditMode = false;
-    let targetChId = null;
-    window.hlsPlayer = null;
-    window.shakaPlayer = null;
-
-    let fitModes = ['vid-normal', 'vid-stretch', 'vid-zoom'];
-    let fitNames = ['نۆڕماڵ', 'فول سکرین', 'زووم'];
-    let currentFitIndex = 0;
-
-    let androidVideoTracks = [];
-    let androidAudioTracks = [];
-    let selectedQualityStr = "-1_-1";
-    let selectedAudioStr = "-1_-1";
-
-    window.updateAndroidTracks = function(jsonStr) {
-        try { let data = JSON.parse(jsonStr); androidVideoTracks = data.video || []; androidAudioTracks = data.audio || []; } catch(e) {}
-    };
-
-    async function loadOnlineChannels() {
+    const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
+    
+    let channels = [];
+    let isMenuOpen = false;
+    let focusedIndex = 0;
+    let playingIndex = -1;
+    let uiTimer, loadTimer;
+    
+    // هێنانە خوارێیا کەنالان
+    async function loadChannels() {
         try {
-            let response = await fetch(ONLINE_CHANNELS_URL + '?t=' + new Date().getTime());
-            if (!response.ok) throw new Error("Network response was not ok");
-            let data = await response.json();
-            allChannels = data;
-            localStorage.setItem('savedOnlineChannels', JSON.stringify(data));
-        } catch (error) {
-            let saved = localStorage.getItem('savedOnlineChannels');
-            if (saved) { allChannels = JSON.parse(saved); showToast("کەنالێن ئۆفلاین هاتنە لۆدکرن"); } 
-            else { showToast("کێشەیەک هەیە د ڕاکێشانا کەنالان دا", true); }
-        }
-        let customChannels = JSON.parse(localStorage.getItem('customChannels')) || [];
-        if(customChannels.length > 0) { allChannels = [...customChannels, ...allChannels]; if(!groups.includes("تایبەت")) groups.splice(2, 0, "تایبەت"); }
-        initApp();
-    }
-
-    function showToast(msg, isError = false) {
-        const toast = document.getElementById(isError ? 'errorToast' : 'infoToast');
-        toast.innerText = msg; toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3000);
-    }
-
-    function initApp() {
-        renderGroups(); filterByGroup("هەمی");
-        const lastChId = localStorage.getItem('lastChannelId');
-        if (lastChId) { const lastCh = allChannels.find(c => c.id == lastChId); if (lastCh) playChannel(lastCh); else if (allChannels.length > 0) loadByIndex(0); } 
-        else if (allChannels.length > 0) { loadByIndex(0); }
-    }
-
-    function toggleVideoFit() {
-        currentFitIndex = (currentFitIndex + 1) % fitModes.length;
-        if (window.AndroidPlayer && (!currentPlayingChannel || currentPlayingChannel.type !== 'dash')) { window.AndroidPlayer.setResizeMode(currentFitIndex); } 
-        else {
-            const video = document.getElementById('main-video'); const embed = document.getElementById('embedPlayer');
-            video.classList.remove('vid-normal', 'vid-stretch', 'vid-zoom'); embed.classList.remove('vid-normal', 'vid-stretch', 'vid-zoom');
-            video.classList.add(fitModes[currentFitIndex]); embed.classList.add(fitModes[currentFitIndex]);
-        }
-        showToast("قەبارێ شاشەیێ: " + fitNames[currentFitIndex]);
-    }
-
-    function toggleEditMode() { isEditMode = !isEditMode; renderChannels(); }
-    function toggleAddModal(show) { document.getElementById('addChOverlay').classList.toggle('active', show); if(show) toggleMenu(false); }
-    function toggleEditChModal(show) { document.getElementById('editChOverlay').classList.toggle('active', show); }
-    function toggleMoveModal(show) { document.getElementById('moveChOverlay').classList.toggle('active', show); }
-    function toggleDeleteModal(show) { document.getElementById('deleteChOverlay').classList.toggle('active', show); }
-
-    function saveNewChannel() { /* ... function from previous ... */ toggleAddModal(false); }
-    function openEditChModal(id) { /* ... function from previous ... */ }
-    function saveEditedChannel() { /* ... function from previous ... */ toggleEditChModal(false); }
-    function openMoveModal(id) { targetChId = id; document.getElementById('moveChPos').value = ''; document.getElementById('moveChOverlay').classList.add('active'); }
-    function confirmMove() { /* ... function from previous ... */ toggleMoveModal(false); }
-    function openDeleteModal(id) { targetChId = id; document.getElementById('deleteChOverlay').classList.add('active'); }
-    function confirmDelete() { /* ... function from previous ... */ toggleDeleteModal(false); }
-
-    function renderGroups() {
-        const bar = document.getElementById('groupsBar');
-        bar.innerHTML = groups.map(g => {
-            let icon = groupIcons[g] || "fa-tv";
-            return `<div class="group-item ${g===currentGroup?'active':''}" onclick="filterByGroup('${g}'); event.stopPropagation();"><i class="fa-solid ${icon}"></i><span>${g}</span></div>`;
-        }).join('');
-    }
-
-    function filterByGroup(name) {
-        currentGroup = name; renderGroups();
-        if (name === "هەمی") filteredChannels = allChannels; else if (name === "دڵخواز") filteredChannels = allChannels.filter(c => favChannels.includes(c.id)); else filteredChannels = allChannels.filter(c => c.group === name);
-        focusedIndex = 0; renderChannels();
-        // سکڕۆل بۆ دەستپێکێ
-        document.getElementById('channelList').scrollLeft = 0;
-    }
-
-    function renderChannels() {
-        const list = document.getElementById('channelList');
-        if (filteredChannels.length === 0 && currentGroup === "دڵخواز") { list.innerHTML = `<div style="text-align:center; padding:20px; color:#666;">چ کەنالێن دڵخواز نینە</div>`; return; }
-        list.innerHTML = filteredChannels.map((ch, i) => {
-            let actionsHtml = isEditMode ? `<div class="ch-actions" onclick="event.preventDefault(); event.stopPropagation();"><button class="ch-action-btn btn-del" onclick="openDeleteModal(${ch.id})"><i class="fa-solid fa-trash"></i></button><button class="ch-action-btn btn-move" onclick="openMoveModal(${ch.id})"><i class="fa-solid fa-up-down"></i></button><button class="ch-action-btn btn-edit" onclick="openEditChModal(${ch.id})"><i class="fa-solid fa-pencil"></i></button></div>` : '';
-            return `<div class="channel-item ${i === focusedIndex && isMenuOpen ? 'focused' : ''}" id="ch-${i}" onclick="if(!isEditMode){loadByIndex(${i}, true);} event.stopPropagation();">
-                    <div class="ch-id">${ch.id}</div>
-                    <div class="channel-logo"><img src="${ch.logo}" loading="lazy"></div>
-                    <div class="channel-name">${ch.name}</div>${actionsHtml}
-                </div>`;
-        }).join('');
-        if(isMenuOpen) updateFocus();
-    }
-
-    function loadByIndex(i, close = false) { if(isEditMode) return; const ch = filteredChannels[i]; if(!ch) return; playChannel(ch); if (close) toggleMenu(false); }
-    function loadByNumber(n) { if(isEditMode) return; const ch = allChannels.find(c => c.id == n); if(ch) playChannel(ch); }
-
-    function playChannel(ch) {
-        if (ch.url.startsWith('go:')) { window.location.href = ch.url; return; }
-        localStorage.setItem('lastChannelId', ch.id); currentPlayingChannel = ch; updateFavIcon(); 
-        
-        if (window.AndroidPlayer && ch.type !== 'dash') {
-            document.getElementById('videoContainer').style.display = 'none'; document.getElementById('embedWrapper').style.display = 'none';
-            document.getElementById('uiNum').innerText = ch.id; document.getElementById('uiName').innerText = ch.name; document.getElementById('uiLogo').querySelector('img').src = ch.logo; showUI();
-            window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || ""); return;
-        }
-
-        const video = document.getElementById('main-video'); const errorMsg = document.getElementById('error-message'); const loader = document.getElementById('video-loader');
-        const videoContainer = document.getElementById('videoContainer'); const embedWrapper = document.getElementById('embedWrapper'); const embedPlayer = document.getElementById('embedPlayer');
-        
-        if (window.hlsPlayer) { window.hlsPlayer.destroy(); window.hlsPlayer = null; }
-        if (window.shakaPlayer) { window.shakaPlayer.destroy(); window.shakaPlayer = null; }
-        errorMsg.style.display = 'none'; loader.style.display = 'block'; video.style.opacity = '0';
-        video.onplaying = function() { loader.style.display = 'none'; video.style.opacity = '1'; };
-
-        if (ch.type === 'embed' || ch.isIframe) {
-            videoContainer.style.display = 'none'; embedWrapper.style.display = 'block'; embedPlayer.src = ch.url; embedPlayer.onload = function() { loader.style.display = 'none'; };
-        } else {
-            embedWrapper.style.display = 'none'; embedPlayer.src = 'about:blank'; videoContainer.style.display = 'flex';
-            if (ch.type === 'dash') {
-                shaka.polyfill.installAll(); window.shakaPlayer = new shaka.Player(video);
-                if (ch.drmKeyId && ch.drmKey) window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
-                window.shakaPlayer.load(ch.url).then(() => video.play()).catch(e => { loader.style.display = 'none'; errorMsg.style.display = 'block'; });
-            } else {
-                if (Hls.isSupported()) {
-                    window.hlsPlayer = new Hls(); window.hlsPlayer.loadSource(ch.url); window.hlsPlayer.attachMedia(video);
-                    window.hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
-                    window.hlsPlayer.on(Hls.Events.ERROR, function(e, d) { if (d.fatal) { loader.style.display = 'none'; errorMsg.style.display = 'block'; } });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = ch.url; video.addEventListener('loadedmetadata', function() { video.play(); }); }
+            let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
+            channels = await res.json();
+            renderList();
+            if (channels.length > 0) {
+                // دەستپێکرن ب کەنالێ ئێکێ
+                playChannel(0);
             }
+        } catch (e) {
+            showToast("کێشە د هێنانا کەنالان دا هەیە");
         }
-        document.getElementById('uiNum').innerText = ch.id; document.getElementById('uiName').innerText = ch.name; document.getElementById('uiLogo').querySelector('img').src = ch.logo; showUI();
     }
 
-    function toggleFav() {
-        if (!currentPlayingChannel) return; const chId = currentPlayingChannel.id; const index = favChannels.indexOf(chId);
-        if (index > -1) { favChannels.splice(index, 1); } else { favChannels.push(chId); } localStorage.setItem('favChannels', JSON.stringify(favChannels)); updateFavIcon(); if (currentGroup === "دڵخواز") filterByGroup("دڵخواز");
+    // دروستکرنا لیستێ
+    function renderList() {
+        const list = document.getElementById('channel-list');
+        list.innerHTML = '';
+        channels.forEach((ch, idx) => {
+            let div = document.createElement('div');
+            div.className = `ch-item ${idx === focusedIndex ? 'focused' : ''} ${idx === playingIndex ? 'playing' : ''}`;
+            div.id = 'ch-' + idx;
+            div.innerHTML = `
+                <div class="ch-item-num">${ch.id || idx+1}</div>
+                <img class="ch-item-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="ch-item-name">${ch.name}</div>
+            `;
+            div.onclick = () => { focusedIndex = idx; playChannel(idx); toggleMenu(false); };
+            list.appendChild(div);
+        });
+        updateFocusScroll();
     }
 
-    function updateFavIcon() {
-        if (!currentPlayingChannel) return; const btn = document.getElementById('favBtn'); const icon = btn.querySelector('i');
-        if (favChannels.includes(currentPlayingChannel.id)) { icon.className = 'fa-solid fa-heart'; icon.style.color = 'var(--accent)'; } else { icon.className = 'fa-regular fa-heart'; icon.style.color = 'white'; }
-    }
-
-    function toggleMenu(force) {
-        isMenuOpen = force !== undefined ? force : !isMenuOpen; document.getElementById('sideMenu').classList.toggle('active', isMenuOpen);
-        if(isMenuOpen) { 
-            if (currentPlayingChannel) { let idx = filteredChannels.findIndex(c => c.id === currentPlayingChannel.id); if (idx === -1) { currentGroup = "هەمی"; filterByGroup("هەمی"); idx = filteredChannels.findIndex(c => c.id === currentPlayingChannel.id); } focusedIndex = idx !== -1 ? idx : 0; }
-            renderChannels(); isControlFocused = false; updateControlFocus(); 
-        } else { showUI(); }
-    }
-
-    /* گۆڕانکاری بۆ شێوازێ ئاسۆیی (Horizontal Scroll) */
-    function moveFocus(dir) { 
-        const items = document.querySelectorAll('.channel-item'); if (items.length === 0) return; 
-        items[focusedIndex].classList.remove('focused'); 
-        focusedIndex = (focusedIndex + dir + items.length) % items.length; 
-        items[focusedIndex].classList.add('focused'); 
-        updateFocus(); 
-    }
-    
-    function updateFocus() { 
-        const items = document.querySelectorAll('.channel-item'); 
-        if (items[focusedIndex]) { 
-            items[focusedIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); 
-        } 
-    }
-
-    function focusControlsBar() { isControlFocused = true; focusedControlIndex = 0; showUI(); updateControlFocus(); }
-    function moveControlFocus(dir) { const btns = document.querySelectorAll('.controls-bar button'); if (btns.length === 0) return; focusedControlIndex = (focusedControlIndex + dir + btns.length) % btns.length; updateControlFocus(); showUI(); }
-    function updateControlFocus() { const btns = document.querySelectorAll('.controls-bar button'); btns.forEach((btn, idx) => { if (isControlFocused && idx === focusedControlIndex) btn.classList.add('focused'); else btn.classList.remove('focused'); }); }
-    function clickFocusedControl() { const btns = document.querySelectorAll('.controls-bar button'); if (btns[focusedControlIndex]) btns[focusedControlIndex].click(); }
-
+    // نیشاندان و شاردنەڤەیا UI (باری خوارێ)
     function showUI() {
-        const ui = document.getElementById('overlayUI'); ui.classList.add('visible'); clearTimeout(uiTimer);
-        uiTimer = setTimeout(() => { if(!isMenuOpen) { ui.classList.remove('visible'); isControlFocused = false; updateControlFocus(); } }, 5000);
+        const bar = document.getElementById('bottom-bar');
+        bar.classList.add('show');
+        clearTimeout(uiTimer);
+        uiTimer = setTimeout(() => {
+            if (!isMenuOpen) bar.classList.remove('show');
+        }, 4000); // پشتی ٤ چرکەیان دێ بەرزە بیت
     }
 
-    function toggleFullScreen() {
-        if (window.AndroidPlayer && window.AndroidPlayer.toggleNativeFullScreen) { window.AndroidPlayer.toggleNativeFullScreen(); } 
-        else { const elem = document.getElementById("mainWrapper"); if (!document.fullscreenElement && !document.webkitFullscreenElement) { if (elem.requestFullscreen) { elem.requestFullscreen().catch(e => console.log(e)); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } } else { if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); } } }
-    }
-    
-    function autoFullScreen() { if (window.AndroidPlayer) return; const elem = document.getElementById("mainWrapper"); if (!document.fullscreenElement) { if (elem.requestFullscreen) { elem.requestFullscreen().catch(e=>e); } } }
-    
-    function changeGroup(dir) { let idx = groups.indexOf(currentGroup); idx = (idx + dir + groups.length) % groups.length; filterByGroup(groups[idx]); }
-    function navigateRelative(dir) { if(filteredChannels.length === 0) return; let idx = filteredChannels.findIndex(c => c.id === currentPlayingChannel.id); if(idx === -1) idx = 0; let next = (idx + dir + filteredChannels.length) % filteredChannels.length; loadByIndex(next, false); }
-
-    document.body.addEventListener('touchstart', autoFullScreen, { once: true });
-    document.body.addEventListener('click', autoFullScreen, { once: true });
-
-    /* کۆنترۆلا نوی بۆ تیڤی بۆکسێ دگەل دیزاینا ئاسۆیی */
-    document.addEventListener('keydown', function(e) {
-        const keyCode = e.keyCode; const key = e.key; const isBackKey = [8, 27, 4, 10009, 461].includes(keyCode);
-        if (isBackKey) { if (isMenuOpen) { toggleMenu(false); e.preventDefault(); return; } }
-        if (/^\d$/.test(key)) { clearTimeout(numTimer); numInput += key; const box = document.getElementById('numBox'); box.innerText = numInput; box.style.display = "block"; numTimer = setTimeout(() => { loadByNumber(parseInt(numInput)); numInput = ""; box.style.display = "none"; }, 1500); return; }
-        showUI(); if ([38, 40, 37, 39, 13].includes(keyCode)) e.preventDefault();
-        if (keyCode === 13) { if (e.repeat) return; isLongPress = false; okPressTimer = setTimeout(() => { isLongPress = true; if (!isMenuOpen) focusControlsBar(); }, 800); return; }
+    // ڤەکرن و گرتنا مینیویێ
+    function toggleMenu(force) {
+        isMenuOpen = force !== undefined ? force : !isMenuOpen;
+        const menu = document.getElementById('left-menu');
+        const bar = document.getElementById('bottom-bar');
         
-        if (isControlFocused) { switch(keyCode) { case 37: moveControlFocus(-1); break; case 39: moveControlFocus(1); break; case 38: isControlFocused = false; updateControlFocus(); break; } return; }
-        
-        // دەمێ مینیو یا ڤەکریە
         if (isMenuOpen) {
-            switch(keyCode) {
-                case 39: moveFocus(1); break; // ڕاست -> کەنالێ داهاتی ل ناو لیستێ
-                case 37: moveFocus(-1); break; // چەپ -> کەنالێ پێشتر
-                case 40: changeGroup(1); break; // خوارێ -> گرووپێ داهاتی
-                case 38: changeGroup(-1); break; // سەرێ -> گرووپێ پێشتر
+            menu.classList.add('open');
+            bar.classList.add('show');
+            clearTimeout(uiTimer); // بهێلە ڤەکری دەمێ مینیو یا ڤەکریە
+            focusedIndex = playingIndex !== -1 ? playingIndex : 0;
+            updateFocusVisuals();
+        } else {
+            menu.classList.remove('open');
+            showUI(); // دەمێ دگری، با باری خوارێ پشتی چەند چرکەیان بەرزە ببیت
+        }
+    }
+
+    // لێدانا ڤیدیۆیێ
+    function playChannel(index) {
+        if (!channels[index]) return;
+        playingIndex = index;
+        const ch = channels[index];
+        
+        // نویکرنەڤەیا باری خوارێ
+        document.getElementById('bb-num').innerText = String(ch.id || index+1).padStart(2, '0');
+        document.getElementById('bb-name').innerText = ch.name;
+        document.getElementById('bb-logo').src = ch.logo;
+        showUI();
+        renderList(); // نیشانا 'playing' ل لیستێ نووی بکەڤە
+
+        // نیشاندانا لۆدەری
+        const loader = document.getElementById('loader');
+        const loadNum = document.getElementById('load-num');
+        loader.style.display = 'flex';
+        let perc = 0;
+        clearInterval(loadTimer);
+        loadTimer = setInterval(() => {
+            perc += 5;
+            loadNum.innerText = perc;
+            if (perc >= 100) clearInterval(loadTimer);
+        }, 50);
+
+        // هنارتن بۆ ئەندرۆید (ExoPlayer)
+        if (window.AndroidPlayer) {
+            window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
+            setTimeout(() => { loader.style.display = 'none'; }, 1000); // شاردنەڤەیا تەخمینی
+        } else {
+            // ئەگەر ل وێبگەرێ بوو بۆ تاقیکرنێ
+            const video = document.getElementById('main-video');
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(ch.url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                    loader.style.display = 'none';
+                    clearInterval(loadTimer);
+                });
+            } else {
+                video.src = ch.url;
+                video.play();
+                loader.style.display = 'none';
+            }
+        }
+    }
+
+    // جوولەیا دیزاینێ (Highlight) د ناو لیستێ دا
+    function updateFocusVisuals() {
+        document.querySelectorAll('.ch-item').forEach((el, idx) => {
+            if (idx === focusedIndex) el.classList.add('focused');
+            else el.classList.remove('focused');
+        });
+        updateFocusScroll();
+    }
+
+    function updateFocusScroll() {
+        const item = document.getElementById('ch-' + focusedIndex);
+        if (item) {
+            item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+    }
+
+    function moveFocus(dir) {
+        if (channels.length === 0) return;
+        focusedIndex = (focusedIndex + dir + channels.length) % channels.length;
+        updateFocusVisuals();
+    }
+
+    // کۆنترۆلا دوگمەیان یێن تیڤی بۆکسێ (D-Pad)
+    document.addEventListener('keydown', (e) => {
+        const key = e.keyCode;
+        
+        // دوگمەیا Back
+        if ([8, 27, 10009, 461].includes(key)) {
+            if (isMenuOpen) { toggleMenu(false); e.preventDefault(); return; }
+        }
+
+        if (isMenuOpen) {
+            // دەمێ مینیو ڤەکریە
+            switch(key) {
+                case 38: // سەرێ
+                    moveFocus(-1); e.preventDefault(); break;
+                case 40: // خوارێ
+                    moveFocus(1); e.preventDefault(); break;
+                case 39: // ڕاست (گرتنا مینیویێ)
+                    toggleMenu(false); e.preventDefault(); break;
+                case 13: // دوگمەیا OK
+                    playChannel(focusedIndex); toggleMenu(false); e.preventDefault(); break;
             }
         } else {
-            // دەمێ مینیو یا گرتیە (تەماشەکرنا ڤیدیۆیێ)
-            if (keyCode === 39) { if (e.repeat) return; isRightLongPress = false; rightPressTimer = setTimeout(() => { isRightLongPress = true; navigateRelative(-1); }, 800); }
-            switch(keyCode) {
-                case 38: navigateRelative(1); break; // سەرێ -> کەنالێ داهاتی
-                case 40: navigateRelative(-1); break; // خوارێ -> کەنالێ پێشتر
-                case 37: toggleMenu(true); break; // چەپ -> ڤەکرنا مینیویێ
+            // دەمێ تەماشەکرنێ (مینیو گرتیە)
+            showUI(); // هەر دوگمەیەک لێدەی باری خوارێ دیار دبیت
+            switch(key) {
+                case 38: // سەرێ -> کەنالێ پێشتر ب ڕاستەوخۆ
+                    playChannel((playingIndex - 1 + channels.length) % channels.length); e.preventDefault(); break;
+                case 40: // خوارێ -> کەنالێ داهاتی ب ڕاستەوخۆ
+                    playChannel((playingIndex + 1) % channels.length); e.preventDefault(); break;
+                case 37: // چەپ یان OK -> ڤەکرنا مینیویێ
+                case 13:
+                    toggleMenu(true); e.preventDefault(); break;
             }
         }
     });
 
-    document.addEventListener('keyup', function(e) {
-        if (e.keyCode === 13) { clearTimeout(okPressTimer); if (!isLongPress) { if (isControlFocused) clickFocusedControl(); else if (!isMenuOpen) toggleMenu(true); else loadByIndex(focusedIndex, true); } isLongPress = false; }
+    // سکرینێ دەستلێدانێ (Touch/Mouse) بۆ مۆبایل و ئایپادێ
+    document.getElementById('app-container').addEventListener('click', (e) => {
+        // ئەگەر ل دەرڤەی مینیویێ کلیک کر، مینیویێ بگرە و باری خوارێ نیشان بدە
+        if (isMenuOpen && !document.getElementById('left-menu').contains(e.target)) {
+            toggleMenu(false);
+        } else if (!isMenuOpen) {
+            showUI();
+        }
     });
 
-    let touchTimeout;
-    document.getElementById('touchLayer').addEventListener('touchstart', function(e) { isLongPress = false; touchTimeout = setTimeout(() => { isLongPress = true; if (!isMenuOpen) focusControlsBar(); }, 800); });
-    document.getElementById('touchLayer').addEventListener('touchend', function(e) { clearTimeout(touchTimeout); showUI(); if (!isLongPress) { let now = new Date().getTime(); if ((now - lastTap < 300) && (now - lastTap > 0)) toggleFullScreen(); lastTap = now; } });
-    document.getElementById('touchLayer').addEventListener('click', function(e) { if (!isLongPress) showUI(); });
-    
-    window.addEventListener('offline', function() { document.getElementById('video-loader').style.display = 'none'; document.getElementById('error-message').style.display = 'block'; });
-    window.addEventListener('online', function() { if (currentPlayingChannel) playChannel(currentPlayingChannel); else if (allChannels.length > 0) loadByIndex(0); });
-    
-    // فەنکشنێن بەتالی بۆ نەمانا کێشەیا کۆدێن کەڤن یێن Quality/Audio
-    window.toggleQuality = function(show){ showToast("کوالێتی خۆکارانە دهێتە ڕێکخستن"); }
-    window.toggleAudio = function(show){ showToast("تراکا دەنگی خۆکارانە دهێتە ڕێکخستن"); }
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
 
-    loadOnlineChannels();
+    // دەستپێکرن
+    loadChannels();
+
 </script>
 </body>
 </html>
-
-    
