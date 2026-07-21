@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STv+ TiviMate Edition</title>
+    <title>STv+ TiviMate Pro</title>
     
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/shaka-player.compiled.js"></script>
@@ -12,8 +12,8 @@
     <style>
         :root { 
             --tivi-blue: #0277bd; /* ڕەنگێ شین یێ TiviMate */
-            --tivi-grey: #2b3036; /* ڕەنگێ باکگراوەندێ دیارکری */
-            --bg-dark: rgba(20, 24, 30, 0.95); /* باکگراوەندێ مینیویێ */
+            --tivi-grey: rgba(255, 255, 255, 0.1); 
+            --bg-dark: rgba(20, 24, 30, 0.98); /* باکگراوەندێ مینیویێ */
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -45,17 +45,25 @@
         .info-num { color: #aaa; font-size: 24px; }
         .info-epg { font-size: 16px; color: #00e676; margin-top: 5px; font-weight: bold; }
 
-        /* مینیویا سەرەکی یا TiviMate (دوو کۆلۆم) */
+        /* --- سیستەمێ نوی یێ TiviMate Menu --- */
         #tivi-menu {
-            position: absolute; top: 0; left: 0; height: 100%; width: 600px; max-width: 80vw;
-            background: var(--bg-dark); z-index: 200; display: flex; flex-direction: row;
+            position: absolute; top: 0; left: 0; height: 100%;
+            display: flex; flex-direction: row; z-index: 200;
             transform: translateX(-100%); transition: transform 0.2s ease-out;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.7); border-right: 1px solid rgba(255,255,255,0.05);
         }
         #tivi-menu.open { transform: translateX(0); }
 
-        /* کۆلۆما کەتەگۆریان (چەپ) */
-        #col-groups { width: 35%; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; background: rgba(0,0,0,0.2); }
+        /* کۆلۆما گرووپان (ب شێوەیێ خۆکار بەرزەیە) */
+        #col-groups { 
+            width: 250px; height: 100%; background: var(--bg-dark);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column;
+            margin-left: -250px; /* ل ڤێرە گرووپ بەرزە دبن */
+            transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* دەمێ کلاسێ show-groups ل سەر تێڤی-مینیو بیت، دەرکەڤیت */
+        #tivi-menu.show-groups #col-groups { margin-left: 0; }
+
         .col-header { padding: 20px; font-size: 18px; font-weight: bold; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .list-container { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 10px 0; }
         .list-container::-webkit-scrollbar { display: none; }
@@ -67,8 +75,13 @@
         .group-item.selected { background: var(--tivi-grey); color: white; }
         .group-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
 
-        /* کۆلۆما کەنالان (ڕاست) */
-        #col-channels { width: 65%; display: flex; flex-direction: column; }
+        /* کۆلۆما کەنالان */
+        #col-channels { 
+            width: 350px; height: 100%; background: var(--bg-dark);
+            display: flex; flex-direction: column; 
+            border-right: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.7);
+        }
         
         .ch-item {
             display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
@@ -76,7 +89,7 @@
         }
         .ch-item.selected { background: var(--tivi-grey); }
         .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
-        .ch-item.playing .ch-name { color: #00e676; } /* ڕەنگێ کەنالێ کار دکەت */
+        .ch-item.playing .ch-name { color: #00e676; } 
         
         .ch-num { width: 40px; font-size: 14px; color: #888; font-weight: bold; text-align: center; }
         .ch-logo { width: 40px; height: 40px; object-fit: contain; margin: 0 15px; }
@@ -107,7 +120,7 @@
         </div>
     </div>
 
-    <!-- مینیویا TiviMate -->
+    <!-- مینیویا TiviMate ب شێوازێ ڤەشارتی -->
     <div id="tivi-menu">
         <div id="col-groups">
             <div class="col-header">گرووپەکان</div>
@@ -128,6 +141,7 @@
 
 
 
+
 <script>
     const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
     
@@ -137,13 +151,11 @@
     
     // ڕێکخستنێن TiviMate
     let isMenuOpen = false;
+    let showGroups = false; // ئایا لیستا گرووپان یا دیارە یان بەرزەیە؟
     let activeColumn = 'channels'; // 'groups' یان 'channels'
     
-    // ئیندێکسێن دیارکری د ناو لیستێ دا
     let selGroupIndex = 0;
     let selChannelIndex = 0;
-    
-    // ئیندێکسێن کەنالێ لێدەدات
     let playGroupIndex = 0;
     let playChannelIndex = -1;
     let currentPlayingChannel = null;
@@ -157,11 +169,9 @@
             let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
             allChannels = await res.json();
             
-            renderGroups();
             updateFilteredChannels();
             
             if (allChannels.length > 0) {
-                // دەستپێکرن ب کەنالێ ئێکێ
                 selChannelIndex = 0;
                 playChannel(filteredChannels[0], 0);
             }
@@ -182,23 +192,19 @@
             filteredChannels = allChannels.filter(c => c.group === gName);
         }
         
-        // دەمێ گرووپ دهێتە گۆڕین، کەنال بزڤڕە سەر سفر
         if(!isMenuOpen) {
             selChannelIndex = filteredChannels.findIndex(c => currentPlayingChannel && c.id === currentPlayingChannel.id);
             if(selChannelIndex === -1) selChannelIndex = 0;
         } else if (activeColumn === 'groups') {
             selChannelIndex = 0;
         }
-        renderChannels();
     }
 
-    // دروستکرنا کۆلۆما گرووپان
     function renderGroups() {
         const list = document.getElementById('groups-list');
         list.innerHTML = '';
         groups.forEach((g, idx) => {
             let div = document.createElement('div');
-            // ئەگەر کۆلۆما گرووپان ئەکتیڤ بیت، شین دبیت (focused)، ئەگەر نە تەنێ تاری دبیت (selected)
             let isFocused = (activeColumn === 'groups' && idx === selGroupIndex);
             let isSelected = (activeColumn === 'channels' && idx === selGroupIndex);
             
@@ -207,16 +213,18 @@
             div.innerHTML = `<span>${g}</span>`;
             div.onclick = () => { 
                 selGroupIndex = idx; 
+                showGroups = false; // دەمێ کلیک کر، گرووپان بەرزە بکە
                 activeColumn = 'channels'; 
                 updateFilteredChannels(); 
+                updateMenuClasses();
                 renderGroups(); 
+                renderChannels();
             };
             list.appendChild(div);
         });
         scrollToItem('grp-' + selGroupIndex);
     }
 
-    // دروستکرنا کۆلۆما کەنالان
     function renderChannels() {
         const list = document.getElementById('channels-list');
         list.innerHTML = '';
@@ -258,7 +266,6 @@
         if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
     }
 
-    // نیشاندانا باری زانیاریان ل خوارێ
     function showInfoBar(ch) {
         if(ch) {
             document.getElementById('ib-num').innerText = ch.id || '';
@@ -274,31 +281,41 @@
         }, 5000); 
     }
 
-    // ڤەکرن و گرتنا مینیویێ
-    function toggleMenu(force) {
+    // کۆنترۆلا ڤەکرن و گرتنا مینیویێ (ب دروستی)
+    function toggleMenu(force, withGroups = false) {
         isMenuOpen = force !== undefined ? force : !isMenuOpen;
-        const menu = document.getElementById('tivi-menu');
         const infoBar = document.getElementById('info-bar');
         
         if (isMenuOpen) {
-            menu.classList.add('open');
-            infoBar.classList.remove('show'); // دەمێ مینیو ڤەبوو، باری خوارێ بگرە
+            showGroups = withGroups;
+            activeColumn = showGroups ? 'groups' : 'channels';
+            updateMenuClasses();
             
-            // گەڕانەڤە بۆ سەر وی کەنالێ لێدەدات دەمێ مینیو ڤەدبیت
-            activeColumn = 'channels';
+            infoBar.classList.remove('show');
             selGroupIndex = playGroupIndex;
             updateFilteredChannels();
-            
             selChannelIndex = playChannelIndex !== -1 ? playChannelIndex : 0;
+            
             renderGroups();
             renderChannels();
         } else {
-            menu.classList.remove('open');
+            updateMenuClasses();
             showInfoBar(currentPlayingChannel); 
         }
     }
 
-    // لێدانا ڤیدیۆیێ
+    // ئەڤ فەنکشنە کلاسێ بۆ دەرکەڤتن و بەرزەبوونا گرووپان کۆنترۆل دکەت
+    function updateMenuClasses() {
+        const menu = document.getElementById('tivi-menu');
+        if (isMenuOpen) {
+            menu.classList.add('open');
+            if (showGroups) menu.classList.add('show-groups');
+            else menu.classList.remove('show-groups');
+        } else {
+            menu.classList.remove('open');
+        }
+    }
+
     function playChannel(ch, indexInFiltered) {
         if (!ch) return;
         currentPlayingChannel = ch;
@@ -333,7 +350,7 @@
             }
             setTimeout(() => { loader.style.display = 'none'; }, 1500);
         } 
-        // ٢. Shaka Player بۆ Dash و Starz
+        // ٢. Shaka Player بۆ Dash
         else {
             videoContainer.style.display = 'block'; 
             if (window.AndroidPlayer) {
@@ -345,25 +362,25 @@
                 window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
             }
             window.shakaPlayer.load(ch.url).then(() => {
-                video.play();
-                loader.style.display = 'none';
+                video.play(); loader.style.display = 'none';
             }).catch(e => {
-                loader.style.display = 'none';
-                showToast("کێشە د ڤەکرنا ڤیدیۆیێ دا هەیە");
+                loader.style.display = 'none'; showToast("کێشە د ڤەکرنا ڤیدیۆیێ دا هەیە");
             });
         }
     }
 
-    // کۆنترۆلا زیرەک یا TiviMate (D-Pad)
+    // لۆژیکا TiviMate بۆ کۆنترۆلا D-Pad
     document.addEventListener('keydown', (e) => {
         const key = e.keyCode;
         
-        // دوگمەیا Back یان Exit
-        if ([8, 27, 10009, 461].includes(key)) {
+        if ([8, 27, 10009, 461].includes(key)) { // دوگمەیا Back یان گەڕانەڤە
             if (isMenuOpen) { 
-                // ئەگەر د ناو کەنالان دابیت، بچە گرووپان. ئەگەر د گرووپان دابیت، مینیو بگرە.
-                if(activeColumn === 'channels') { activeColumn = 'groups'; renderGroups(); renderChannels(); }
-                else { toggleMenu(false); }
+                if (showGroups) {
+                    showGroups = false; activeColumn = 'channels';
+                    updateMenuClasses(); renderGroups(); renderChannels();
+                } else {
+                    toggleMenu(false);
+                }
                 e.preventDefault(); return; 
             }
         }
@@ -378,12 +395,12 @@
                     case 40: // خوارێ
                         if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
                         renderChannels(); break;
-                    case 37: // چەپ -> بچە کۆلۆما گرووپان
-                        activeColumn = 'groups';
-                        renderGroups(); renderChannels(); break;
-                    case 39: // ڕاست -> بگرە
+                    case 37: // چەپ -> لیستا گرووپان نیشان بدە
+                        showGroups = true; activeColumn = 'groups'; 
+                        updateMenuClasses(); renderGroups(); renderChannels(); break;
+                    case 39: // ڕاست -> مینیویێ بگرە
                         toggleMenu(false); break;
-                    case 13: // OK -> لێبدە
+                    case 13: // OK -> کەنالی لێبدە و مینیو بگرە
                         playChannel(filteredChannels[selChannelIndex], selChannelIndex); 
                         toggleMenu(false); break;
                 }
@@ -395,33 +412,30 @@
                     case 40: // خوارێ
                         if (selGroupIndex < groups.length - 1) selGroupIndex++;
                         updateFilteredChannels(); renderGroups(); break;
-                    case 39: // ڕاست یان OK -> بچە کۆلۆما کەنالان
-                    case 13:
-                        activeColumn = 'channels';
-                        renderGroups(); renderChannels(); break;
-                    case 37: // چەپ -> بگرە
+                    case 39: // ڕاست -> گرووپان بەرزە بکە و بچە لیستا کەنالان
+                    case 13: // OK -> هەمان کار
+                        showGroups = false; activeColumn = 'channels'; 
+                        updateMenuClasses(); renderGroups(); renderChannels(); break;
+                    case 37: // چەپ -> مینیویێ ب تەمامی بگرە (یان دکاری هیچی نەکەی)
                         toggleMenu(false); break;
                 }
             }
         } else {
-            // دەمێ مینیو گرتیە (سەیرکرنا تیڤی)
+            // دەمێ تەماشەکرنا ڤیدیۆیێ یە (مینیو گرتیە)
             if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
             
             switch(key) {
-                case 38: // سەرێ (UP) -> کەنالێ پێشتر
-                    if (playChannelIndex > 0) {
-                        playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
-                    }
+                case 38: // سەرێ
+                    if (playChannelIndex > 0) playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
                     break;
-                case 40: // خوارێ (DOWN) -> کەنالێ داهاتی
-                    if (playChannelIndex < filteredChannels.length - 1) {
-                        playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
-                    }
+                case 40: // خوارێ
+                    if (playChannelIndex < filteredChannels.length - 1) playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
                     break;
-                case 37: // چەپ یان OK -> ڤەکرنا مینیویێ ل سەر کەنالێ ئامادە
-                case 13:
-                    toggleMenu(true); break;
-                case 39: // ڕاست -> نیشاندانا باری خوارێ
+                case 37: // چەپ
+                case 13: // OK
+                    // ڤەکرنا مینیویێ بێی نیشاندانا گرووپان
+                    toggleMenu(true, false); break;
+                case 39: // ڕاست
                     showInfoBar(currentPlayingChannel); break;
             }
         }
