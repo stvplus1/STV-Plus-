@@ -165,12 +165,12 @@
             updateFilteredChannels();
             
             if (allChannels.length > 0) {
-                // پشکنینا کەنالێ دوماهیێ (Memory)
+                // پشکنینا کەنالێ دوماهیێ (Memory) ب شێوەیەکێ دروستتر
                 let lastChId = localStorage.getItem('last_channel_id');
                 let targetIdx = 0;
                 
                 if (lastChId) {
-                    let foundIdx = filteredChannels.findIndex(c => c.id == lastChId);
+                    let foundIdx = filteredChannels.findIndex((c, i) => (c.id ? c.id == lastChId : (allChannels.indexOf(c) + 1) == lastChId));
                     if (foundIdx !== -1) targetIdx = foundIdx;
                 }
                 
@@ -242,10 +242,13 @@
             let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
             let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
             
+            // ئەگەر id نەبیت، ڕیزبەندیێ نیشان بدە
+            let displayNum = ch.id || (allChannels.indexOf(ch) + 1);
+
             div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
             div.id = 'ch-' + idx;
             div.innerHTML = `
-                <div class="ch-num">${ch.id || idx+1}</div>
+                <div class="ch-num">${displayNum}</div>
                 <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
                 <div class="ch-info">
                     <div class="ch-name">${ch.name}</div>
@@ -270,7 +273,7 @@
 
     function showInfoBar(ch) {
         if(ch) {
-            document.getElementById('ib-num').innerText = ch.id || '';
+            document.getElementById('ib-num').innerText = ch.id || (allChannels.indexOf(ch) + 1);
             document.getElementById('ib-name').innerText = ch.name;
             document.getElementById('ib-logo').src = ch.logo;
         }
@@ -323,7 +326,8 @@
         playChannelIndex = indexInFiltered;
         
         // تۆمارکرنا ID یێ کەنالێ ل ناو Memory بۆ ڤەگەڕانێ
-        localStorage.setItem('last_channel_id', ch.id);
+        let channelIdToSave = ch.id ? ch.id : (allChannels.indexOf(ch) + 1);
+        localStorage.setItem('last_channel_id', channelIdToSave);
 
         showInfoBar(ch);
         if(isMenuOpen) renderChannels(); 
@@ -351,7 +355,6 @@
                     hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
                     hls.on(Hls.Events.ERROR, (event, data) => {
                         if (data.fatal) {
-                            // خۆکارانە کارکرنا ڤەگەراندنێ پشتی ٣ چرکەیان (Auto Reconnect)
                             reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
                         }
                     });
@@ -372,13 +375,12 @@
                 video.play(); loader.style.display = 'none';
             }).catch(e => {
                 loader.style.display = 'none';
-                // خۆکارانە کارکرنا ڤەگەراندنێ بۆ Shaka پشتی ٣ چرکەیان
                 reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
             });
         }
     }
 
-    // گەڕان ب ڕێکا ژمارەیێن لێدایی ل سەر کۆنترۆلێ
+    // گەڕان ب ڕێکا ژمارەیێن لێدایی ل سەر کۆنترۆلێ باشترکرن
     function handleNumberInput(digit) {
         clearTimeout(numTimer);
         typedNumber += digit;
@@ -392,14 +394,16 @@
             typedNumber = "";
             ind.style.display = 'none';
             
-            // گەڕان د ناڤ هەمی کەنالان دا ب ID
-            let globalIdx = allChannels.findIndex(c => c.id == targetId);
+            // گەڕان د ناڤ هەمی کەنالان دا ب ID یان ژمارەیا ڕیزبەندیێ
+            let globalIdx = allChannels.findIndex((c, i) => (c.id ? c.id == targetId : (i + 1) == targetId));
+            
             if (globalIdx !== -1) {
                 let foundCh = allChannels[globalIdx];
                 // ڤەگۆهاستنا گرووپێ گونجایی
                 selGroupIndex = groups.indexOf(foundCh.group) !== -1 ? groups.indexOf(foundCh.group) : 0;
                 updateFilteredChannels();
-                let filteredIdx = filteredChannels.findIndex(c => c.id == targetId);
+                
+                let filteredIdx = filteredChannels.findIndex((c, i) => (c.id ? c.id == targetId : (allChannels.indexOf(c) + 1) == targetId));
                 if (filteredIdx !== -1) {
                     selChannelIndex = filteredIdx;
                     playChannel(foundCh, filteredIdx);
@@ -407,14 +411,13 @@
             } else {
                 showToast("کەناڵ نەهاتە دیتن");
             }
-        }, 1200); // پشتی ١.2 چرکەیان ژمارە دهێتە ناسین
+        }, 1200);
     }
 
     document.addEventListener('keydown', (e) => {
         const key = e.keyCode;
         const keyChar = e.key;
         
-        // ئەگەر دوگمەیا ژمارەیێ هاتە لێدان (0 تا 9)
         if (/^\d$/.test(keyChar)) {
             handleNumberInput(keyChar);
             e.preventDefault();
@@ -443,12 +446,12 @@
                     case 40: // خوارێ
                         if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
                         renderChannels(); break;
-                    case 37: // چەپ -> گرووپان نیشان بدە
+                    case 37: // چەپ
                         showGroups = true; activeColumn = 'groups'; 
                         updateMenuClasses(); renderGroups(); renderChannels(); break;
-                    case 39: // ڕاست -> مینیویێ بگرە
+                    case 39: // ڕاست
                         toggleMenu(false); break;
-                    case 13: // OK -> کەنالی لێبدە
+                    case 13: // OK
                         playChannel(filteredChannels[selChannelIndex], selChannelIndex); 
                         toggleMenu(false); break;
                 }
@@ -460,7 +463,7 @@
                     case 40: // خوارێ
                         if (selGroupIndex < groups.length - 1) selGroupIndex++;
                         updateFilteredChannels(); renderGroups(); break;
-                    case 39: // ڕاست -> گرووپان بەرزە بکە
+                    case 39: 
                     case 13:
                         showGroups = false; activeColumn = 'channels'; 
                         updateMenuClasses(); renderGroups(); renderChannels(); break;
@@ -472,14 +475,15 @@
             if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
             
             switch(key) {
-                case 38: // Channel Up (سەرێ) -> کەنالێ پێشتر
-                    if (playChannelIndex > 0) {
-                        playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
-                    }
-                    break;
-                case 40: // Channel Down (خوارێ) -> کەنالێ داهاتی
+                // پێچەوانەکرنا دوگمەیان
+                case 38: // UP (سەرێ) -> کەنالێ داهاتی (Next Channel) ب بەرەڤ سەرێ دچیت
                     if (playChannelIndex < filteredChannels.length - 1) {
                         playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
+                    }
+                    break;
+                case 40: // DOWN (خوارێ) -> کەنالێ پێشتر (Previous Channel) ب بەرەڤ خوارێ دچیت
+                    if (playChannelIndex > 0) {
+                        playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
                     }
                     break;
                 case 37: 
