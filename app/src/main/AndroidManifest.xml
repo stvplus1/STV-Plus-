@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ڕێپێدانێن ئینتەرنێتێ کو پێویستن -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -16,19 +17,20 @@
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true">
 
+        <!-- ل ڤێرە کێشە هەبوو، نوکە مە ناڤێ تەمام یێ فایلا تە دانا (com.stvplus.player.MainActivity) -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.stvplus.player.MainActivity"
             android:exported="true"
             android:screenOrientation="landscape" 
             android:configChanges="orientation|keyboardHidden|screenSize">
             
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
-
     </application>
 
 </manifest>
