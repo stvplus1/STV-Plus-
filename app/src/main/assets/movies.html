@@ -86,6 +86,10 @@
         .ch-item {
             display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
             transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02);
+            /* تایبەتمەندیێن نوی بۆ خێراترین لۆدکرن ل سەر ئامێرێن لاواز */
+            content-visibility: auto; 
+            contain-intrinsic-size: 61px;
+            will-change: background, border-color;
         }
         .ch-item.selected { background: var(--tivi-grey); }
         .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
@@ -97,45 +101,8 @@
         .ch-name { font-size: 16px; font-weight: bold; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ch-epg { font-size: 12px; color: #888; margin-top: 2px; }
 
-        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 5000; opacity: 0; transition: 0.2s; }
+        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.2s; }
         #toast.show { opacity: 1; }
-
-        /* ---------- دیزاینا هەلبژاردنێن دەستکاری کرنێ ---------- */
-        #context-menu {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(20, 24, 30, 0.95); padding: 15px; border-radius: 12px; z-index: 4000;
-            display: none; flex-direction: column; width: 280px; gap: 5px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1);
-        }
-        #context-menu.show { display: flex; }
-        .ctx-item {
-            padding: 12px 15px; color: #ccc; text-align: right; cursor: pointer; border-radius: 8px;
-            transition: 0.2s; font-size: 16px; display: flex; align-items: center; gap: 15px;
-            direction: rtl;
-        }
-        .ctx-item i { width: 20px; text-align: center; font-size: 18px; }
-        .ctx-item.focused { background: var(--tivi-blue); color: white; font-weight: bold; }
-        .ctx-item.danger.focused { background: #d32f2f; }
-
-        /* ---------- دیزاینا مۆدێلێ (پەنجەرەیا نڤیسینێ) ---------- */
-        #edit-modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(20, 24, 30, 0.98); padding: 25px; border-radius: 12px; z-index: 4000;
-            display: none; flex-direction: column; width: 340px; direction: rtl;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 1px solid var(--tivi-blue);
-        }
-        #edit-modal.show { display: flex; }
-        #modal-title { margin-bottom: 20px; text-align: center; color: white; font-size: 20px; }
-        #modal-input {
-            width: 100%; padding: 12px; margin-bottom: 25px; background: #222; color: white;
-            border: 2px solid #444; border-radius: 8px; font-size: 18px; text-align: center;
-        }
-        #modal-input:focus { border-color: var(--tivi-blue); outline: none; }
-        .modal-btns { display: flex; gap: 15px; }
-        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; color: white; }
-        .btn-cancel { background: #444; }
-        .btn-save { background: var(--tivi-blue); }
-        .modal-btn.focused { outline: 3px solid white; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
@@ -169,24 +136,6 @@
         </div>
     </div>
     
-    <!-- لیستا هەلبژارتنان (Long Press) -->
-    <div id="context-menu">
-        <div class="ctx-item" id="ctx-move"><i class="fa fa-arrows-v"></i> ڤەگوهاستن</div>
-        <div class="ctx-item" id="ctx-edit"><i class="fa fa-pencil"></i> دەستکاری کرن</div>
-        <div class="ctx-item danger" id="ctx-delete"><i class="fa fa-trash"></i> مسح کرن</div>
-        <div class="ctx-item" id="ctx-reset"><i class="fa fa-refresh"></i> ڤەگەڕاندنا بنەڕەت</div>
-    </div>
-
-    <!-- مۆدێلێ گۆڕینێ -->
-    <div id="edit-modal">
-        <h3 id="modal-title">سەردێڕ</h3>
-        <input type="text" id="modal-input" placeholder="...">
-        <div class="modal-btns">
-            <button class="modal-btn btn-save" id="btn-save">پاراستن</button>
-            <button class="modal-btn btn-cancel" id="btn-cancel">هەلوەشاندن</button>
-        </div>
-    </div>
-
     <div id="toast"></div>
 </div>
 
@@ -212,21 +161,10 @@
     window.shakaPlayer = null;
     let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
 
-    // گۆڕاوێن تایبەت ب دەستکاری کرنێ (Edit Mode)
-    let pressTimer = null;
-    let isHoldingOk = false;
-    let isCtxOpen = false;
-    let ctxIndex = 0;
-    const ctxOptions = ['move', 'edit', 'delete', 'reset'];
-    
-    let isModalOpen = false;
-    let modalMode = ''; 
-    let modalBtnIndex = 0; // 0 = save, 1 = cancel
-
     const videoElement = document.getElementById('main-video');
 
     function triggerAutoReconnect() {
-        if (reconnectTimer) return; 
+        if (reconnectTimer) return;
         
         document.getElementById('loader').style.display = 'block';
         reconnectTimer = setTimeout(() => {
@@ -254,14 +192,8 @@
 
     async function initApp() {
         try {
-            // پشکنین ئەگەر لیستەکا دەستکاریکری هەبیت ل ئامێرێ بکارینەری
-            let customCh = localStorage.getItem('custom_channels');
-            if (customCh) {
-                allChannels = JSON.parse(customCh);
-            } else {
-                let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
-                allChannels = await res.json();
-            }
+            let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
+            allChannels = await res.json();
             
             updateFilteredChannels();
             
@@ -327,45 +259,62 @@
         scrollToItem('grp-' + selGroupIndex);
     }
 
+    function updateChannelFocus(oldIdx, newIdx) {
+        let oldEl = document.getElementById('ch-' + oldIdx);
+        if (oldEl) oldEl.classList.remove('focused');
+        
+        let newEl = document.getElementById('ch-' + newIdx);
+        if (newEl) newEl.classList.add('focused');
+        
+        scrollToItem('ch-' + newIdx);
+    }
+
+    // فەنکشنێ کلیککرنێ یێ گشتی بۆ خێراترکرنێ
+    window.handleChannelClick = function(idx) {
+        activeColumn = 'channels';
+        let oldIdx = selChannelIndex;
+        selChannelIndex = idx;
+        updateChannelFocus(oldIdx, idx);
+        playChannel(filteredChannels[idx], idx); 
+        toggleMenu(false); 
+    };
+
+    // فەنکشنێ renderChannels ب شێوازێ String Builder
     function renderChannels() {
         const list = document.getElementById('channels-list');
-        list.innerHTML = '';
         
         if (filteredChannels.length === 0) {
             list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
             return;
         }
 
-        filteredChannels.forEach((ch, idx) => {
-            let div = document.createElement('div');
-            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex);
-            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
-            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
+        let html = "";
+        let len = filteredChannels.length;
+        
+        for(let idx = 0; idx < len; idx++) {
+            let ch = filteredChannels[idx];
+            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex) ? 'focused' : '';
+            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex) ? 'selected' : '';
+            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id) ? 'playing' : '';
             
             let displayNum = ch.id || (allChannels.indexOf(ch) + 1);
 
-            div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
-            div.id = 'ch-' + idx;
-            div.innerHTML = `
+            html += `
+            <div class="ch-item ${isFocused} ${isSelected} ${isPlaying}" id="ch-${idx}" onclick="handleChannelClick(${idx})">
                 <div class="ch-num">${displayNum}</div>
-                <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <img class="ch-logo" src="${ch.logo}" loading="lazy" onerror="this.src='https://via.placeholder.com/40'">
                 <div class="ch-info">
                     <div class="ch-name">${ch.name}</div>
                     <div class="ch-epg">No information</div>
                 </div>
-            `;
-            
-            // کرتەکرنا ئاسایی ب مۆسکێ
-            div.onclick = () => { 
-                if(isCtxOpen || isModalOpen) return;
-                activeColumn = 'channels';
-                selChannelIndex = idx;
-                playChannel(ch, idx); 
-                toggleMenu(false); 
-            };
-            list.appendChild(div);
+            </div>`;
+        }
+        
+        list.innerHTML = html;
+        
+        requestAnimationFrame(() => {
+            scrollToItem('ch-' + selChannelIndex);
         });
-        scrollToItem('ch-' + selChannelIndex);
     }
 
     function scrollToItem(id) {
@@ -435,7 +384,9 @@
         localStorage.setItem('last_channel_id', channelIdToSave);
 
         showInfoBar(ch);
-        if(isMenuOpen) renderChannels(); 
+        if(isMenuOpen) {
+            renderChannels(); 
+        }
 
         const loader = document.getElementById('loader');
         const videoContainer = document.getElementById('videoContainer');
@@ -524,179 +475,14 @@
         }, 1200);
     }
 
-    // ================= تایبەتمەندیێن Context Menu & Modal ================= //
-    
-    function saveChannelsToLocal() {
-        // گۆڕینا هەمی IDـیان دا کو ل گەل ڕیزبەندییا نوێ بگونجن
-        allChannels.forEach((c, idx) => c.id = idx + 1);
-        localStorage.setItem('custom_channels', JSON.stringify(allChannels));
-    }
-
-    function openContextMenu() {
-        isCtxOpen = true;
-        ctxIndex = 0;
-        updateCtxUI();
-        document.getElementById('context-menu').classList.add('show');
-    }
-
-    function closeContextMenu() {
-        isCtxOpen = false;
-        document.getElementById('context-menu').classList.remove('show');
-    }
-
-    function updateCtxUI() {
-        const items = document.querySelectorAll('.ctx-item');
-        items.forEach((el, idx) => {
-            if (idx === ctxIndex) el.classList.add('focused');
-            else el.classList.remove('focused');
-        });
-    }
-
-    function openModal(mode) {
-        closeContextMenu();
-        isModalOpen = true;
-        modalMode = mode;
-        modalBtnIndex = 0; // فوکس ل سەر دوگمەیا 'پاراستن' دکەت
-        
-        const targetCh = filteredChannels[selChannelIndex];
-        const titleEl = document.getElementById('modal-title');
-        const inputEl = document.getElementById('modal-input');
-        
-        if (mode === 'move') {
-            titleEl.innerText = "ژمارەیا نوێ بنڤیسە بۆ ڤەگوهاستنێ";
-            inputEl.type = "number";
-            inputEl.value = targetCh.id || (allChannels.indexOf(targetCh) + 1);
-        } else if (mode === 'edit') {
-            titleEl.innerText = "ناڤێ نوێ یێ کەناڵی بنڤیسە";
-            inputEl.type = "text";
-            inputEl.value = targetCh.name;
-        }
-        
-        updateModalUI();
-        document.getElementById('edit-modal').classList.add('show');
-        setTimeout(() => inputEl.focus(), 100);
-    }
-
-    function closeModal() {
-        isModalOpen = false;
-        document.getElementById('edit-modal').classList.remove('show');
-    }
-
-    function updateModalUI() {
-        document.getElementById('btn-save').classList.toggle('focused', modalBtnIndex === 0);
-        document.getElementById('btn-cancel').classList.toggle('focused', modalBtnIndex === 1);
-    }
-
-    function saveModal() {
-        const val = document.getElementById('modal-input').value;
-        const targetCh = filteredChannels[selChannelIndex];
-        const globalIndex = allChannels.indexOf(targetCh);
-        
-        if (modalMode === 'move') {
-            let newPos = parseInt(val);
-            if (!isNaN(newPos) && newPos > 0) {
-                allChannels.splice(globalIndex, 1);
-                let insertIndex = Math.max(0, Math.min(newPos - 1, allChannels.length));
-                allChannels.splice(insertIndex, 0, targetCh);
-                showToast("کەناڵ هاتە ڤەگوهاستن");
-            }
-        } else if (modalMode === 'edit') {
-            if (val.trim() !== '') {
-                targetCh.name = val.trim();
-                showToast("ناڤێ کەناڵی هاتە گۆڕین");
-            }
-        }
-        
-        saveChannelsToLocal();
-        updateFilteredChannels();
-        renderChannels();
-        closeModal();
-    }
-
-    function deleteChannel() {
-        const targetCh = filteredChannels[selChannelIndex];
-        const globalIndex = allChannels.indexOf(targetCh);
-        if (globalIndex > -1) {
-            allChannels.splice(globalIndex, 1);
-            saveChannelsToLocal();
-            updateFilteredChannels();
-            renderChannels();
-            showToast("کەناڵ هاتە مسح کرن");
-        }
-        closeContextMenu();
-    }
-
-    async function resetChannels() {
-        localStorage.removeItem('custom_channels');
-        showToast("کەناڵ هاتنە ڤەگەڕاندن بۆ بنەڕەت");
-        closeContextMenu();
-        await initApp();
-    }
-
-    // ================= کۆنترۆلا کیبۆردی و دوگمەیان ================= //
-
     document.addEventListener('keydown', (e) => {
         const key = e.keyCode;
         const keyChar = e.key;
         
-        // ١. کۆنترۆلا مۆدێلێ (پەنجەرەیا نڤیسینێ)
-        if (isModalOpen) {
-            if (key === 37 || key === 39) { // چەپ و ڕاست بۆ هەلبژارتنا دوگمەیان
-                modalBtnIndex = modalBtnIndex === 0 ? 1 : 0;
-                updateModalUI();
-                e.preventDefault();
-            } else if (key === 13) { // Enter
-                if (modalBtnIndex === 0) saveModal();
-                else closeModal();
-                e.preventDefault();
-            } else if ([8, 27, 461].includes(key)) { // Back
-                closeModal();
-                e.preventDefault();
-            }
-            return; 
-        }
-
-        // ٢. کۆنترۆلا Context Menu
-        if (isCtxOpen) {
-            if (key === 38) { // Up
-                if (ctxIndex > 0) ctxIndex--;
-                updateCtxUI();
-                e.preventDefault();
-            } else if (key === 40) { // Down
-                if (ctxIndex < ctxOptions.length - 1) ctxIndex++;
-                updateCtxUI();
-                e.preventDefault();
-            } else if (key === 13) { // Enter
-                let action = ctxOptions[ctxIndex];
-                if (action === 'move') openModal('move');
-                else if (action === 'edit') openModal('edit');
-                else if (action === 'delete') deleteChannel();
-                else if (action === 'reset') resetChannels();
-                e.preventDefault();
-            } else if ([8, 27, 461, 37].includes(key)) { // Back / Left
-                closeContextMenu();
-                e.preventDefault();
-            }
-            return; 
-        }
-
         if (/^\d$/.test(keyChar)) {
             handleNumberInput(keyChar);
             e.preventDefault();
             return;
-        }
-
-        // ٣. تایبەتمەندییا Long Press ل سەر دوگمەیا OK / Enter
-        if (key === 13 && isMenuOpen && activeColumn === 'channels') {
-            if (!e.repeat) {
-                isHoldingOk = true;
-                pressTimer = setTimeout(() => {
-                    isHoldingOk = false;
-                    openContextMenu();
-                }, 2000); // پشتی ٢ چرکەیان مینو ڤەدبیت
-            }
-            e.preventDefault();
-            return; 
         }
 
         if ([8, 27, 10009, 461].includes(key)) {
@@ -715,16 +501,27 @@
             e.preventDefault();
             if (activeColumn === 'channels') {
                 switch(key) {
-                    case 38:
-                        if (selChannelIndex > 0) selChannelIndex--;
-                        renderChannels(); break;
-                    case 40:
-                        if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
-                        renderChannels(); break;
+                    case 38: // UP
+                        if (selChannelIndex > 0) {
+                            let oldIdx = selChannelIndex;
+                            selChannelIndex--;
+                            updateChannelFocus(oldIdx, selChannelIndex);
+                        }
+                        break;
+                    case 40: // DOWN
+                        if (selChannelIndex < filteredChannels.length - 1) {
+                            let oldIdx = selChannelIndex;
+                            selChannelIndex++;
+                            updateChannelFocus(oldIdx, selChannelIndex);
+                        }
+                        break;
                     case 37:
                         showGroups = true; activeColumn = 'groups'; 
                         updateMenuClasses(); renderGroups(); renderChannels(); break;
                     case 39:
+                        toggleMenu(false); break;
+                    case 13:
+                        playChannel(filteredChannels[selChannelIndex], selChannelIndex); 
                         toggleMenu(false); break;
                 }
             } else if (activeColumn === 'groups') {
@@ -747,12 +544,12 @@
             if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
             
             switch(key) {
-                case 38: 
+                case 38: // UP -> کەناڵێ داهاتی
                     if (playChannelIndex < filteredChannels.length - 1) {
                         playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
                     }
                     break;
-                case 40: 
+                case 40: // DOWN -> کەناڵێ پێشتر
                     if (playChannelIndex > 0) {
                         playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
                     }
@@ -762,18 +559,6 @@
                     toggleMenu(true, false); break;
                 case 39: 
                     showInfoBar(currentPlayingChannel); break;
-            }
-        }
-    });
-
-    // ٤. ئەگەر بەری ٢ چرکەیان پەنجە ڕاکرێت ل سەر دوگمەیا OK، دێ ب ئاسایی کەناڵی لێدەت
-    document.addEventListener('keyup', (e) => {
-        if (e.keyCode === 13 && isMenuOpen && activeColumn === 'channels' && !isCtxOpen && !isModalOpen) {
-            if (isHoldingOk) { 
-                clearTimeout(pressTimer);
-                isHoldingOk = false;
-                playChannel(filteredChannels[selChannelIndex], selChannelIndex);
-                toggleMenu(false);
             }
         }
     });
