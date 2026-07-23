@@ -3,622 +3,789 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ڕادیۆیا سیارەیێ ب لۆگۆیێ لڤۆک</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>STv+ TiviMate Pro Plus</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/shaka-player.compiled.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Tajawal', sans-serif;
-            margin: 0;
-            padding: 0;
-            user-select: none; 
+        :root { 
+            --tivi-blue: #0277bd; 
+            --tivi-grey: rgba(255, 255, 255, 0.1); 
+            --bg-dark: rgba(20, 24, 30, 0.98); 
         }
         
-        body {
-            background-color: #050505; 
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden; 
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background: transparent; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: none; direction: ltr; }
+        
+        #app-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        
+        #video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: transparent; }
+        #videoContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1; display: none; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
+        
+        #loader { position: absolute; z-index: 50; display: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: var(--tivi-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* نیشاندانا هژمارێن لێدایی ل سەر کۆنترۆلێ */
+        #num-indicator {
+            position: absolute; top: 30px; left: 40px; background: rgba(2, 119, 189, 0.9); color: white;
+            padding: 8px 20px; border-radius: 8px; font-size: 28px; font-weight: bold; z-index: 3000; display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        .car-dashboard {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            flex-direction: row; 
-            background: radial-gradient(circle at top right, #1a1a24 0%, #050505 100%);
+        #info-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 40px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            z-index: 100; opacity: 0; transition: opacity 0.3s; display: flex; align-items: flex-end; gap: 20px;
+            pointer-events: none;
         }
+        #info-bar.show { opacity: 1; }
+        .info-logo { width: 70px; height: 70px; object-fit: contain; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 8px; }
+        .info-details { flex: 1; }
+        .info-title { font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 15px; }
+        .info-num { color: #aaa; font-size: 24px; }
+        .info-epg { font-size: 16px; color: #00e676; margin-top: 5px; font-weight: bold; }
 
-        .list-panel {
-            width: 35%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 2px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
+        #tivi-menu {
+            position: absolute; top: 0; left: 0; height: 100%;
+            display: flex; flex-direction: row; z-index: 200;
+            transform: translateX(-100%); transition: transform 0.2s ease-out;
         }
+        #tivi-menu.open { transform: translateX(0); }
 
-        .list-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #a0a0b5;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            text-align: center;
+        #col-groups { 
+            width: 250px; height: 100%; background: var(--bg-dark);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column;
+            margin-left: -250px; 
+            transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        #tivi-menu.show-groups #col-groups { margin-left: 0; }
 
-        .category-tabs {
-            display: flex;
-            overflow-x: auto;
-            gap: 10px;
-            padding-bottom: 15px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            scrollbar-width: none; 
+        .col-header { padding: 20px; font-size: 18px; font-weight: bold; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .list-container { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 10px 0; }
+        .list-container::-webkit-scrollbar { display: none; }
+        
+        .group-item {
+            padding: 15px 20px; font-size: 16px; color: #ccc; cursor: pointer; transition: 0.1s;
+            display: flex; align-items: center; gap: 10px; border-left: 4px solid transparent;
+        }
+        .group-item.selected { background: var(--tivi-grey); color: white; }
+        .group-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
+
+        #col-channels { 
+            width: 350px; height: 100%; background: var(--bg-dark);
+            display: flex; flex-direction: column; 
+            border-right: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.7);
         }
         
-        .category-tabs::-webkit-scrollbar {
-            display: none; 
+        .ch-item {
+            display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
+            transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02);
         }
-
-        .tab-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #ffffff;
-            padding: 8px 20px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.3s ease;
-        }
-
-        .tab-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .tab-btn.active {
-            background: #ff6600; 
-            border-color: #ff6600;
-            box-shadow: 0 4px 10px rgba(255, 102, 0, 0.3);
-        }
-
-        .stations-list {
-            flex: 1;
-            overflow-y: auto;
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
-            padding-right: 5px;
-        }
+        .ch-item.selected { background: var(--tivi-grey); }
+        .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
+        .ch-item.playing .ch-name { color: #00e676; } 
         
-        .stations-list::-webkit-scrollbar {
-            display: none;
+        .ch-num { width: 40px; font-size: 14px; color: #888; font-weight: bold; text-align: center; }
+        .ch-logo { width: 40px; height: 40px; object-fit: contain; margin: 0 15px; }
+        .ch-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .ch-name { font-size: 16px; font-weight: bold; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ch-epg { font-size: 12px; color: #888; margin-top: 2px; }
+
+        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 5000; opacity: 0; transition: 0.2s; }
+        #toast.show { opacity: 1; }
+
+        /* ---------- دیزاینا هەلبژاردنێن دەستکاری کرنێ ---------- */
+        #context-menu {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 24, 30, 0.95); padding: 15px; border-radius: 12px; z-index: 4000;
+            display: none; flex-direction: column; width: 280px; gap: 5px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1);
         }
-
-        .list-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 12px 15px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
+        #context-menu.show { display: flex; }
+        .ctx-item {
+            padding: 12px 15px; color: #ccc; text-align: right; cursor: pointer; border-radius: 8px;
+            transition: 0.2s; font-size: 16px; display: flex; align-items: center; gap: 15px;
+            direction: rtl;
         }
+        .ctx-item i { width: 20px; text-align: center; font-size: 18px; }
+        .ctx-item.focused { background: var(--tivi-blue); color: white; font-weight: bold; }
+        .ctx-item.danger.focused { background: #d32f2f; }
 
-        .list-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateX(-5px);
+        /* ---------- دیزاینا مۆدێلێ (پەنجەرەیا نڤیسینێ) ---------- */
+        #edit-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 24, 30, 0.98); padding: 25px; border-radius: 12px; z-index: 4000;
+            display: none; flex-direction: column; width: 340px; direction: rtl;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 1px solid var(--tivi-blue);
         }
-
-        .list-item.active {
-            background: rgba(255, 102, 0, 0.1);
-            border: 2px solid #ff6600; 
-            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.2);
+        #edit-modal.show { display: flex; }
+        #modal-title { margin-bottom: 20px; text-align: center; color: white; font-size: 20px; }
+        #modal-input {
+            width: 100%; padding: 12px; margin-bottom: 25px; background: #222; color: white;
+            border: 2px solid #444; border-radius: 8px; font-size: 18px; text-align: center;
         }
-
-        .item-icon {
-            font-size: 22px;
-            margin-left: 15px;
-            color: #ff6600;
-            width: 45px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .item-name {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .player-panel {
-            width: 65%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px; 
-            position: relative;
-        }
-
-        .clock {
-            position: absolute;
-            top: 25px;
-            right: 35px; 
-            font-size: 35px;
-            font-weight: bold;
-            color: #ffffff;
-            letter-spacing: 2px;
-            opacity: 0.8;
-        }
-
-        .album-art {
-            width: 220px;
-            height: 180px;
-            border-radius: 20px;
-            margin-bottom: 20px; 
-            background: linear-gradient(145deg, #1a120e, #0a0705); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 10px 30px rgba(255, 102, 0, 0.2);
-            border: 2px solid rgba(255, 102, 0, 0.4);
-            position: relative;
-        }
-
-        .sound-icon {
-            width: 80px;
-            height: 80px;
-            fill: none;
-            stroke: #ff6600;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            margin-bottom: 15px;
-            animation: pulse-glow 2s infinite;
-        }
-
-        @keyframes pulse-glow {
-            0% { filter: drop-shadow(0 0 10px rgba(255, 102, 0, 0.4)); transform: scale(1); }
-            50% { filter: drop-shadow(0 0 25px rgba(255, 102, 0, 0.9)); transform: scale(1.08); }
-            100% { filter: drop-shadow(0 0 10px rgba(255, 102, 0, 0.4)); transform: scale(1); }
-        }
-
-        .equalizer {
-            display: flex;
-            gap: 6px;
-            height: 30px;
-            align-items: flex-end;
-        }
-
-        .bar {
-            width: 8px;
-            background: #ff6600;
-            border-radius: 4px;
-            animation: bounce 0.5s infinite alternate ease-in-out;
-            animation-play-state: paused; 
-            height: 5px; 
-        }
-
-        .bar:nth-child(1) { animation-duration: 0.4s; }
-        .bar:nth-child(2) { animation-duration: 0.7s; }
-        .bar:nth-child(3) { animation-duration: 0.5s; }
-        .bar:nth-child(4) { animation-duration: 0.8s; }
-        .bar:nth-child(5) { animation-duration: 0.6s; }
-        .bar:nth-child(6) { animation-duration: 0.4s; }
-        .bar:nth-child(7) { animation-duration: 0.7s; }
-
-        @keyframes bounce {
-            0% { height: 5px; }
-            100% { height: 100%; }
-        }
-
-        .equalizer.playing .bar {
-            animation-play-state: running;
-        }
-
-        .station-name {
-            font-size: 22px;
-            font-weight: 900;
-            margin-bottom: 20px; 
-            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            color: #ffffff;
-            text-align: center;
-        }
-
-        .marquee-container {
-            width: 95%;
-            max-width: 700px; 
-            margin-bottom: 20px; 
-            background: rgba(255, 102, 0, 0.08); 
-            border: 1px solid rgba(255, 102, 0, 0.3);
-            border-radius: 12px;
-            padding: 8px 10px; 
-            display: flex;
-            align-items: center;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .marquee-icon {
-            color: #ff6600;
-            font-size: 24px; 
-            margin-left: 15px;
-            animation: pulse 2s infinite;
-            flex-shrink: 0;
-        }
-
-        .marquee-wrapper {
-            flex-grow: 1;
-            overflow: hidden;
-            position: relative;
-            height: 35px;
-            display: flex;
-            align-items: center;
-        }
-
-        .marquee-text {
-            position: absolute;
-            white-space: nowrap;
-            color: #ecf0f1;
-            font-size: 18px; 
-            font-weight: 700; 
-            left: 0;
-            animation: scrollLeftToRight 20s linear infinite;
-        }
-
-        @keyframes scrollLeftToRight {
-            0% { left: 0; transform: translateX(-100%); }
-            100% { left: 100%; transform: translateX(0); }
-        }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-        }
-
-        .btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            color: #ffffff;
-            font-size: 30px;
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        .btn:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.05); }
-        .btn:active { background: rgba(255, 255, 255, 0.2); transform: scale(0.95); }
-
-        .play-btn {
-            width: 85px;
-            height: 85px;
-            background: #ff6600; 
-            color: #ffffff;
-            font-size: 35px;
-            border: none;
-            box-shadow: 0 10px 25px rgba(255, 102, 0, 0.4);
-        }
-
-        .play-btn:hover { background: #ff7a22; box-shadow: 0 10px 30px rgba(255, 102, 0, 0.6); }
-        .play-btn:active { background: #e65c00; }
-        
-        audio { display: none; }
-
+        #modal-input:focus { border-color: var(--tivi-blue); outline: none; }
+        .modal-btns { display: flex; gap: 15px; }
+        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; color: white; }
+        .btn-cancel { background: #444; }
+        .btn-save { background: var(--tivi-blue); }
+        .modal-btn.focused { outline: 3px solid white; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
 
-    <div class="car-dashboard">
-        
-        <div class="list-panel">
-            <div class="list-title">لیستا ڕادیۆیان</div>
-            
-            <div class="category-tabs" id="categoryTabs"></div>
-
-            <div class="stations-list" id="stationsListContainer"></div>
+<div id="app-container">
+    <div id="video-layer">
+        <div id="videoContainer">
+            <video id="main-video" playsinline autoplay></video>
         </div>
-
-        <div class="player-panel">
-            <div class="clock" id="clock">00:00</div>
-            
-            <div class="album-art" id="artwork">
-                <svg class="sound-icon" viewBox="0 0 24 24">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
-                
-                <div class="equalizer" id="equalizer">
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                </div>
-            </div>
-            
-            <h1 class="station-name" id="stationName">ڕادیۆیا 1</h1>
-            
-            <div class="marquee-container">
-                <div class="marquee-icon"><i class="fas fa-tools"></i></div>
-                <div class="marquee-wrapper">
-                    <div class="marquee-text">
-                         DNA Service | بو سيرفس کرنا هه می جورین BYD یا (رون گھورین گیر ومه کینه نابدیت، پاکیجا پروگراما هتد) هه روه سا سه خبیریکرنا هه می جورین ترومبیلین بانزین و گاز 
-                    </div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <button class="btn" onclick="nextStation()">⏭</button>
-                <button class="btn play-btn" id="playPauseBtn" onclick="togglePlay()">▶</button>
-                <button class="btn" onclick="prevStation()">⏮</button>
-            </div>
-
-        </div>
-
-        <audio id="audioPlayer">
-            <source id="audioSource" src="" type="audio/mpeg">
-        </audio>
-
+        <div id="loader"><div class="spinner"></div></div>
     </div>
 
-    <script>
-        const stations = [
-            // --- قورئانا پیرۆز ---
-            { name: "Quran Karim FM", url: "https://a1.asurahosting.com/listen/quranradio/radio.mp3", icon: "101.5", category: "قران كريم" },
-            { name: "tarateel ", url: "https://backup.qurango.net/radio/tarateel", icon: "🛜", category: "قران كريم" },
-            { name: "تفسير قران ", url: "https://backup.qurango.net/radio/mukhtasartafsir", icon: "🛜", category: "قران كريم" },
-            { name: "sunnat.  ", url: "https://a1.asurahosting.com:9380/radio.mp3", icon: "🛜", category: "قران كريم" },
-            { name: "Mihrab ", url: "http://siliconvalley.servep2p.com:8000/mihrab", icon: "🛜", category: "قران كريم" },
-            
-            // --- قورئانخوێنێن نوی یێن تە زێدەکرین ---
-            { name: "رمضان شكور", url: "http://r4.tarat.com:8124/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "رعد الكردي", url: "http://r11.tarat.com:8096/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "پێشەوا قادر", url: "http://r15.tarat.com:8006/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عبيد موفق", url: "http://r10.tarat.com:8016/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "رزگار الكردي", url: "http://r12.tarat.com:8068/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "سامي الكردي", url: "http://r1.tarat.com:8184/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "هلويست نصرالدين", url: "http://r2.tarat.com:8036/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عمر عبدالله", url: "http://r2.tarat.com:8092/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "ياسر الدوسري", url: "http://r6.tarat.com:8048/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عبدالرحمن السديس", url: "http://r5.tarat.com:8146/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "ناصر القطامي", url: "http://r6.tarat.com:8022/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "ماهر المعيقلي", url: "http://r5.tarat.com:8208/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "سعد الغامدي", url: "http://r2.tarat.com:8098/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "ادريس ابكر", url: "http://r7.tarat.com:8100/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "سعود الشريم", url: "http://r8.tarat.com:8110/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عبدالباسط عبدالصمد", url: "http://r5.tarat.com:8132/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "خالد الجليل", url: "http://r8.tarat.com:8098/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عبدالمجيد الأركاني", url: "http://r1.tarat.com:8124/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "مشاري العفاسي", url: "http://r9.tarat.com:8174/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "منصور السالمي", url: "http://r6.tarat.com:8102/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عبدالرحمن مسعد", url: "http://r7.tarat.com:8030/stream", icon: "📻", category: "قران كريم" },
-            { name: "عامر الكاظمي", url: "http://r13.tarat.com:8064/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "ولید الدلیمي 1", url: "http://r1.tarat.com:8110/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "ولید الدلیمي 2", url: "http://r3.tarat.com:8186/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عاصم اللحيدان", url: "http://r15.tarat.com:8104/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "محمد ايوب", url: "http://r11.tarat.com:8074/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "احمد العجمي", url: "http://r4.tarat.com:8026/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "سلمان العتيبي", url: "http://r6.tarat.com:8034/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "يوسف السعيد", url: "http://r9.tarat.com:8118/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "عبدالوالي الأركاني", url: "http://r2.tarat.com:8014/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "محمد البراك", url: "http://r2.tarat.com:8056/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "فارس عباد", url: "http://r2.tarat.com:8034/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "غسان الشوربجي", url: "http://r8.tarat.com:8026/index.html/stream", icon: "📻", category: "قران كريم" },
-            { name: "هزاع البلوشي", url: "http://r5.tarat.com:8202/index.html/stream", icon: "📻", category: "قران كريم" },
+    <div id="num-indicator"></div>
 
-            // --- کوردی ---
-            { name: "AVA Badinan FM", url: "https://ava.nodeict.online/;?type=http&nocache=1", icon: "101.5", category: "کوردی" },
-            { name: "Zakaria FM", url: "https://stream.zeno.fm/k8sxxxe5g2zuv?aw_0_req_lsid=74ab05ae71515566b29ee8c41992b2dd", icon: "101.5", category: "کوردی" },
+    <div id="info-bar">
+        <img class="info-logo" id="ib-logo" src="" alt="">
+        <div class="info-details">
+            <div class="info-title"><span class="info-num" id="ib-num">1</span> <span id="ib-name">کەناڵ</span></div>
+            <div class="info-epg">No information</div>
+        </div>
+    </div>
 
-{ name: "Bilind Abdullah FM", url: "https://stream.zeno.fm/6ubes5a6g2zuv?bsw-uid=ab225c7e-e838-4d1f-91bd-28d807cfdc83&acu-uid=1471014070285&an-uid=6244330047335128355&eps-uid=AQAGzxLBYeDobgJYv6wbAQEBAQEBAQCeh-ql3gEBAJ6H6qXe&dot-uid=0d7724020062c3b8e77134d4&amb-uid=3134204601587868256&dyn-uid=8582936098287185730&ttd-uid=593442ab-8303-4ca4-9004-844adca27a3c&aw_0_req_lsid=74ab05ae71515566b29ee8c41992b2dd", icon: "101.5", category: "کوردی" },
+    <div id="tivi-menu">
+        <div id="col-groups">
+            <div class="col-header">گروپێن کەناڵان</div>
+            <div class="list-container" id="groups-list"></div>
+        </div>
+        <div id="col-channels">
+            <div class="col-header" id="current-group-title">هەمی</div>
+            <div class="list-container" id="channels-list"></div>
+        </div>
+    </div>
+    
+    <!-- لیستا هەلبژارتنان (Long Press) -->
+    <div id="context-menu">
+        <div class="ctx-item" id="ctx-move"><i class="fa fa-arrows-v"></i> ڤەگوهاستن</div>
+        <div class="ctx-item" id="ctx-edit"><i class="fa fa-pencil"></i> دەستکاری کرن</div>
+        <div class="ctx-item danger" id="ctx-delete"><i class="fa fa-trash"></i> مسح کرن</div>
+        <div class="ctx-item" id="ctx-reset"><i class="fa fa-refresh"></i> ڤەگەڕاندنا بنەڕەت</div>
+    </div>
 
+    <!-- مۆدێلێ گۆڕینێ -->
+    <div id="edit-modal">
+        <h3 id="modal-title">سەردێڕ</h3>
+        <input type="text" id="modal-input" placeholder="...">
+        <div class="modal-btns">
+            <button class="modal-btn btn-save" id="btn-save">پاراستن</button>
+            <button class="modal-btn btn-cancel" id="btn-cancel">هەلوەشاندن</button>
+        </div>
+    </div>
 
-{ name: "Ayshashan FM", url: "https://stream.zeno.fm/c9n9smxgr2zuv?acu-uid=1471014070285&an-uid=6244330047335128355&eps-uid=AQAGzxLBYeDobgJYv6wbAQEBAQEBAQCeh-ql3gEBAJ6H6qXe&dot-uid=0d7724020062c3b8e77134d4&amb-uid=3134204601587868256&cto-uid=9f5a9e53-2cfb-4988-9114-beb50effac32-6a28a459-4951&bsw-uid=ab225c7e-e838-4d1f-91bd-28d807cfdc83&dyn-uid=8582936098287185730&ttd-uid=593442ab-8303-4ca4-9004-844adca27a3c", icon: "101.5", category: "کوردی" },
+    <div id="toast"></div>
+</div>
 
-{ name: "Ebdulqehar Zaxoy  FM", url: "https://stream.zeno.fm/4amzxva6g2zuv?acu-uid=1471014070285&an-uid=6244330047335128355&eps-uid=AQAGzxLBYeDobgJYv6wbAQEBAQEBAQCeh-ql3gEBAJ6H6qXe&dot-uid=0d7724020062c3b8e77134d4&amb-uid=3134204601587868256&cto-uid=9f5a9e53-2cfb-4988-9114-beb50effac32-6a28a459-4951&bsw-uid=ab225c7e-e838-4d1f-91bd-28d807cfdc83&dyn-uid=8582936098287185730&ttd-uid=593442ab-8303-4ca4-9004-844adca27a3c", icon: "101.5", category: "کوردی" },
+<script>
+    const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
+    
+    let allChannels = [];
+    let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "زاروک", "وەرزشی", "OSN"];
+    let filteredChannels = [];
+    
+    let isMenuOpen = false;
+    let showGroups = false;
+    let activeColumn = 'channels';
+    
+    let selGroupIndex = 0;
+    let selChannelIndex = 0;
+    let playGroupIndex = 0;
+    let playChannelIndex = -1;
+    let currentPlayingChannel = null;
 
+    let uiTimer, reconnectTimer, numTimer, stallTimer;
+    let typedNumber = "";
+    window.shakaPlayer = null;
+    let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
 
-{ name: "Diyar Dersim FM", url: "https://stream.zeno.fm/6t5znwxgr2zuv?acu-uid=1471014070285&an-uid=6244330047335128355&eps-uid=AQAGzxLBYeDobgJYv6wbAQEBAQEBAQCeh-ql3gEBAJ6H6qXe&dot-uid=0d7724020062c3b8e77134d4&amb-uid=3134204601587868256&cto-uid=9f5a9e53-2cfb-4988-9114-beb50effac32-6a28a459-4951&bsw-uid=ab225c7e-e838-4d1f-91bd-28d807cfdc83&dyn-uid=8582936098287185730&ttd-uid=593442ab-8303-4ca4-9004-844adca27a3c", icon: "101.5", category: "کوردی" },
+    // گۆڕاوێن تایبەت ب دەستکاری کرنێ (Edit Mode)
+    let pressTimer = null;
+    let isHoldingOk = false;
+    let isCtxOpen = false;
+    let ctxIndex = 0;
+    const ctxOptions = ['move', 'edit', 'delete', 'reset'];
+    
+    let isModalOpen = false;
+    let modalMode = ''; 
+    let modalBtnIndex = 0; // 0 = save, 1 = cancel
 
-            { name: "TRAFFIC 🚦 FM", url: "http://212.237.124.15:8686/pssend", icon: "101.1", category: "کوردی" },
-            { name: "RUDAW FM", url: "https://radio.rudaw.net/stream/live", icon: "102.7", category: "کوردی" },
-            { name: "K24 FM", url: "https://audio-edge-5bkfj.fra.h.radiomast.io/04b1ce4c-24f2-4172-b756-065832ef78bf", icon: "99.7", category: "کوردی" },
-            { name: "Duhok FM", url: "https://stream.zeno.fm/kfrrct64hoxuv", icon: "88.9", category: "کوردی" },
-            { name: "WAAR AUDIO", url: "https://stream.zeno.fm/9w1hu5g6g2zuv?aw_0_req_lsid=b805864d0658689c9e0f4eaaeb40a002", icon: "101.5", category: "کوردی" },
-            { name: "WAAR FM", url: "https://c4.radioboss.fm:8633/stream", icon: "95.1", category: "کوردی" },
-            { name: "Xabir FM", url: "https://xabur-rojavaradio.radioca.st/stream?type=http&nocache=3", icon: "90.1", category: "کوردی" },
-            { name: "Kurd 1 FM", url: "https://listen.radioking.com/radio/119251/stream/158701", icon: "UK", category: "کوردی" },
-            { name: "Goran FM", url: "https://radio.host247.net/dgoran", icon: "🛜", category: "کوردی" },
-            { name: "KRT FM", url: "https://video1.getstreamhosting.com:8154/stream", icon: "🛜", category: "کوردی" },
-            { name: "MIX Sweden FM", url: "http://solid55.streamupsolutions.com:32000/stream", icon: "🛜", category: "کوردی" },
-            { name: "MIX Kurd FM", url: "https://playradiokurdistanstream.com/stream", icon: "🛜", category: "کوردی" },
-            { name: "Shafaq FM", url: "https://radio.shafaq.com/kurdish", icon: "internet", category: "کوردی" },
-            { name: "M Erbil FM", url: "http://usa13.fastcast4u.com:5908/stream", icon: "🛜", category: "کوردی" },
-            { name: "Parzink FM", url: "https://a1.asurahosting.com/listen/parzink/radio.mp3", icon: "🛜", category: "کوردی" },
-            { name: "Nhel FM", url: "https://stream-177.zeno.fm/qk3immampzqvv?zt=eyJhbGciOiJIUzI1NiJ9", icon: "🛜", category: "کوردی" },
-            { name: "Shadi FM", url: "https://stream.zeno.fm/evvkgtwyqxstv", icon: "🛜", category: "کوردی" },
-            { name: "KurdSat FM", url: "http://uk3.internet-radio.com:8011/stream", icon: "95.7", category: "کوردی" },
-            { name: "Gkurdistan FM", url: "https://a10.asurahosting.com:9470/radio.mp3", icon: "95.0", category: "کوردی" },
-            { name: "Deng Kurdistan FM", url: "https://a8.asurahosting.com:7730/radio.mp3", icon: "108.0", category: "کوردی" },
-            { name: "yagrto FM", url: "https://stream-173.zeno.fm/ud0wera9hy2vv?zt=eyJhbGciOiJIUzI1NiJ9", icon: "93.5", category: "کوردی" },
-            { name: "Spede FM", url: "https://radio.host247.net/spedafm", icon: "106.3", category: "کوردی" },
-            { name: "Taba FM", url: "https://radyo1.radyo-dinle.tc/8150/;", icon: "🎶", category: "کوردی" },
-            { name: "Arta FM", url: "http://edge.mixlr.com/channel/qtgru", icon: "95.2", category: "کوردی" },
-            { name: "Radio 8 FM", url: "https://a8.asurahosting.com:7850/radio.mp3", icon: "95.3", category: "کوردی" },
-            
-            // --- عەرەبی ---
-            { name: "MBC FM", url: "https://radio-mbcfm.mbc.net/radio-mbcfm.m3u8", icon: "🎭", category: "عەرەبی" },
-            { name: "MBC Panorama FM", url: "https://d6izdil55uftn.cloudfront.net/out/v1/0a06d1d6377c47edbd48721ed724bd08/index_7.m3u8", icon: "🎭", category: "عەرەبی" },
-            { name: "MBC Mood FM", url: "https://shd-gcp-live-alt.edgenextcdn.net/live/bitmovin-mbc-mood/78367bf48ccdba501d0d014a10c21031/manifest/audio1/192kbps/audio.m3u8", icon: "🎭", category: "عەرەبی" },
-            { name: "Al Rashid FM", url: "https://streaming.shoutcast.com/alrasheed-fm?1710150359856", icon: "🎭", category: "عەرەبی" },
+    const videoElement = document.getElementById('main-video');
 
-            // --- ئینگلیزی ---
-            { name: "Mix FM", url: "http://c2.radioboss.fm:8184/stream", icon: "104.3", category: "ئینگلیزی" },
-            { name: "Play Radio", url: "https://playradiokurdistanstream.com/stream", icon: "89.1", category: "ئینگلیزی" }
-        ];
-
-        let currentStationIndex = 0;
-        let isPlaying = false;
-        let activeCategory = 'هەمی'; 
-
-        const audioPlayer = document.getElementById('audioPlayer');
-        const audioSource = document.getElementById('audioSource');
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const stationName = document.getElementById('stationName');
-        const listContainer = document.getElementById('stationsListContainer');
-        const tabsContainer = document.getElementById('categoryTabs');
-        const equalizer = document.getElementById('equalizer');
-
-        function buildTabs() {
-            tabsContainer.innerHTML = "";
-            const categories = ['هەمی', 'کوردی','قران كريم', 'عەرەبی', 'ئینگلیزی'];
-
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = `tab-btn ${cat === activeCategory ? 'active' : ''}`;
-                btn.innerText = cat;
-                btn.onclick = () => {
-                    activeCategory = cat;
-                    buildTabs();
-                    buildList();
-                };
-                tabsContainer.appendChild(btn);
-            });
-        }
-
-        function buildList() {
-            listContainer.innerHTML = "";
-
-            stations.forEach((station, index) => {
-                if (activeCategory !== 'هەمی' && station.category !== activeCategory) {
-                    return; 
-                }
-
-                const item = document.createElement('div');
-                item.className = `list-item ${index === currentStationIndex ? 'active' : ''}`;
-                item.onclick = () => selectStation(index);
-                
-                item.innerHTML = `
-                    <div class="item-icon">${station.icon}</div>
-                    <div class="item-name">${station.name}</div>
-                `;
-                listContainer.appendChild(item);
-            });
-        }
-
-        function updateClock() {
-            const now = new Date();
-            let hours = now.getHours();
-            let minutes = now.getMinutes();
-            hours = hours % 12 || 12; 
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            document.getElementById('clock').innerText = `${hours}:${minutes}`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        function selectStation(index) {
-            currentStationIndex = index;
-            loadStation(index);
-            if (!isPlaying) togglePlay(); 
-            else audioPlayer.play();
-        }
-
-        function loadStation(index) {
-            stationName.innerText = stations[index].name;
-            audioSource.src = stations[index].url;
-            buildList(); 
-            audioPlayer.load();
-            if (isPlaying) {
-                audioPlayer.play();
+    function triggerAutoReconnect() {
+        if (reconnectTimer) return; 
+        
+        document.getElementById('loader').style.display = 'block';
+        reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            if (currentPlayingChannel) {
+                playChannel(currentPlayingChannel, playChannelIndex);
             }
-        }
+        }, 3000);
+    }
 
-        function togglePlay() {
-            if (isPlaying) {
-                audioPlayer.pause();
-                playPauseBtn.innerHTML = "▶";
-                equalizer.classList.remove("playing"); 
+    videoElement.onerror = () => triggerAutoReconnect();
+    videoElement.onstalled = () => triggerAutoReconnect();
+    videoElement.onwaiting = () => {
+        clearTimeout(stallTimer);
+        stallTimer = setTimeout(() => {
+            triggerAutoReconnect();
+        }, 5000);
+    };
+    videoElement.onplaying = () => {
+        clearTimeout(stallTimer);
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+        document.getElementById('loader').style.display = 'none';
+    };
+
+    async function initApp() {
+        try {
+            // پشکنین ئەگەر لیستەکا دەستکاریکری هەبیت ل ئامێرێ بکارینەری
+            let customCh = localStorage.getItem('custom_channels');
+            if (customCh) {
+                allChannels = JSON.parse(customCh);
             } else {
-                audioPlayer.play();
-                playPauseBtn.innerHTML = "⏸";
-                equalizer.classList.add("playing"); 
+                let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
+                allChannels = await res.json();
             }
-            isPlaying = !isPlaying;
-        }
-
-        function nextStation() {
-            let nextIdx = currentStationIndex;
-            do {
-                nextIdx = (nextIdx + 1) % stations.length;
-                if (activeCategory === 'هەمی' || stations[nextIdx].category === activeCategory) {
-                    selectStation(nextIdx);
-                    return;
+            
+            updateFilteredChannels();
+            
+            if (allChannels.length > 0) {
+                let lastChId = localStorage.getItem('last_channel_id');
+                let targetIdx = 0;
+                
+                if (lastChId) {
+                    let foundIdx = filteredChannels.findIndex((c, i) => (c.id ? c.id == lastChId : (allChannels.indexOf(c) + 1) == lastChId));
+                    if (foundIdx !== -1) targetIdx = foundIdx;
                 }
-            } while (nextIdx !== currentStationIndex);
+                
+                selChannelIndex = targetIdx;
+                playChannel(filteredChannels[targetIdx], targetIdx);
+            }
+        } catch (e) {
+            showToast("کێشە د هێنانا کەنالان دا هەیە");
+        }
+    }
+
+    function updateFilteredChannels() {
+        let gName = groups[selGroupIndex];
+        document.getElementById('current-group-title').innerText = gName;
+        
+        if (gName === "هەمی") {
+            filteredChannels = allChannels;
+        } else if (gName === "دڵخواز") {
+            filteredChannels = allChannels.filter(c => favChannels.includes(c.id));
+        } else {
+            filteredChannels = allChannels.filter(c => c.group === gName);
+        }
+        
+        if(!isMenuOpen) {
+            selChannelIndex = filteredChannels.findIndex(c => currentPlayingChannel && c.id === currentPlayingChannel.id);
+            if(selChannelIndex === -1) selChannelIndex = 0;
+        } else if (activeColumn === 'groups') {
+            selChannelIndex = 0;
+        }
+    }
+
+    function renderGroups() {
+        const list = document.getElementById('groups-list');
+        list.innerHTML = '';
+        groups.forEach((g, idx) => {
+            let div = document.createElement('div');
+            let isFocused = (activeColumn === 'groups' && idx === selGroupIndex);
+            let isSelected = (activeColumn === 'channels' && idx === selGroupIndex);
+            
+            div.className = `group-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
+            div.id = 'grp-' + idx;
+            div.innerHTML = `<span>${g}</span>`;
+            div.onclick = () => { 
+                selGroupIndex = idx; 
+                showGroups = false; 
+                activeColumn = 'channels'; 
+                updateFilteredChannels(); 
+                updateMenuClasses();
+                renderGroups(); 
+                renderChannels();
+            };
+            list.appendChild(div);
+        });
+        scrollToItem('grp-' + selGroupIndex);
+    }
+
+    function renderChannels() {
+        const list = document.getElementById('channels-list');
+        list.innerHTML = '';
+        
+        if (filteredChannels.length === 0) {
+            list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
+            return;
         }
 
-        function prevStation() {
-            let prevIdx = currentStationIndex;
-            do {
-                prevIdx = (prevIdx - 1 + stations.length) % stations.length;
-                if (activeCategory === 'هەمی' || stations[prevIdx].category === activeCategory) {
-                    selectStation(prevIdx);
-                    return;
+        filteredChannels.forEach((ch, idx) => {
+            let div = document.createElement('div');
+            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex);
+            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
+            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
+            
+            let displayNum = ch.id || (allChannels.indexOf(ch) + 1);
+
+            div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
+            div.id = 'ch-' + idx;
+            div.innerHTML = `
+                <div class="ch-num">${displayNum}</div>
+                <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="ch-info">
+                    <div class="ch-name">${ch.name}</div>
+                    <div class="ch-epg">No information</div>
+                </div>
+            `;
+            
+            // کرتەکرنا ئاسایی ب مۆسکێ
+            div.onclick = () => { 
+                if(isCtxOpen || isModalOpen) return;
+                activeColumn = 'channels';
+                selChannelIndex = idx;
+                playChannel(ch, idx); 
+                toggleMenu(false); 
+            };
+            list.appendChild(div);
+        });
+        scrollToItem('ch-' + selChannelIndex);
+    }
+
+    function scrollToItem(id) {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+    }
+
+    function showInfoBar(ch) {
+        if(ch) {
+            document.getElementById('ib-num').innerText = ch.id || (allChannels.indexOf(ch) + 1);
+            document.getElementById('ib-name').innerText = ch.name;
+            document.getElementById('ib-logo').src = ch.logo;
+        }
+        
+        const bar = document.getElementById('info-bar');
+        bar.classList.add('show');
+        clearTimeout(uiTimer);
+        uiTimer = setTimeout(() => {
+            if (!isMenuOpen) bar.classList.remove('show');
+        }, 5000); 
+    }
+
+    function toggleMenu(force, withGroups = false) {
+        isMenuOpen = force !== undefined ? force : !isMenuOpen;
+        const infoBar = document.getElementById('info-bar');
+        
+        if (isMenuOpen) {
+            showGroups = withGroups;
+            activeColumn = showGroups ? 'groups' : 'channels';
+            updateMenuClasses();
+            
+            infoBar.classList.remove('show');
+            selGroupIndex = playGroupIndex;
+            updateFilteredChannels();
+            selChannelIndex = playChannelIndex !== -1 ? playChannelIndex : 0;
+            
+            renderGroups();
+            renderChannels();
+        } else {
+            updateMenuClasses();
+            showInfoBar(currentPlayingChannel); 
+        }
+    }
+
+    function updateMenuClasses() {
+        const menu = document.getElementById('tivi-menu');
+        if (isMenuOpen) {
+            menu.classList.add('open');
+            if (showGroups) menu.classList.add('show-groups');
+            else menu.classList.remove('show-groups');
+        } else {
+            menu.classList.remove('open');
+        }
+    }
+
+    function playChannel(ch, indexInFiltered) {
+        if (!ch) return;
+        currentPlayingChannel = ch;
+        playGroupIndex = selGroupIndex;
+        playChannelIndex = indexInFiltered;
+        
+        clearTimeout(reconnectTimer);
+        clearTimeout(stallTimer);
+        reconnectTimer = null;
+
+        let channelIdToSave = ch.id ? ch.id : (allChannels.indexOf(ch) + 1);
+        localStorage.setItem('last_channel_id', channelIdToSave);
+
+        showInfoBar(ch);
+        if(isMenuOpen) renderChannels(); 
+
+        const loader = document.getElementById('loader');
+        const videoContainer = document.getElementById('videoContainer');
+
+        loader.style.display = 'block';
+
+        if (window.shakaPlayer) {
+            window.shakaPlayer.destroy();
+            window.shakaPlayer = null;
+        }
+
+        if (ch.type !== 'dash') {
+            videoContainer.style.display = 'none'; 
+            if (window.AndroidPlayer) {
+                window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
+            } else {
+                videoContainer.style.display = 'block';
+                if (Hls.isSupported()) {
+                    const hls = new Hls(); 
+                    hls.loadSource(ch.url); 
+                    hls.attachMedia(videoElement);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => videoElement.play().catch(() => triggerAutoReconnect()));
+                    
+                    hls.on(Hls.Events.ERROR, (event, data) => {
+                        if (data.fatal) {
+                            triggerAutoReconnect();
+                        }
+                    });
+                } else { 
+                    videoElement.src = ch.url; 
+                    videoElement.play().catch(() => triggerAutoReconnect()); 
                 }
-            } while (prevIdx !== currentStationIndex);
+            }
+            setTimeout(() => { loader.style.display = 'none'; }, 1500);
+        } else {
+            videoContainer.style.display = 'block'; 
+            if (window.AndroidPlayer) {
+                window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); 
+            }
+            shaka.polyfill.installAll();
+            window.shakaPlayer = new shaka.Player(videoElement);
+            
+            window.shakaPlayer.addEventListener('error', () => triggerAutoReconnect());
+
+            if (ch.drmKeyId && ch.drmKey) {
+                window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
+            }
+            window.shakaPlayer.load(ch.url).then(() => {
+                videoElement.play().catch(() => triggerAutoReconnect()); 
+                loader.style.display = 'none';
+            }).catch(e => {
+                loader.style.display = 'none';
+                triggerAutoReconnect();
+            });
+        }
+    }
+
+    function handleNumberInput(digit) {
+        clearTimeout(numTimer);
+        typedNumber += digit;
+        
+        const ind = document.getElementById('num-indicator');
+        ind.innerText = typedNumber;
+        ind.style.display = 'block';
+        
+        numTimer = setTimeout(() => {
+            let targetId = parseInt(typedNumber);
+            typedNumber = "";
+            ind.style.display = 'none';
+            
+            let globalIdx = allChannels.findIndex((c, i) => (c.id ? c.id == targetId : (i + 1) == targetId));
+            
+            if (globalIdx !== -1) {
+                let foundCh = allChannels[globalIdx];
+                selGroupIndex = groups.indexOf(foundCh.group) !== -1 ? groups.indexOf(foundCh.group) : 0;
+                updateFilteredChannels();
+                
+                let filteredIdx = filteredChannels.findIndex((c, i) => (c.id ? c.id == targetId : (allChannels.indexOf(c) + 1) == targetId));
+                if (filteredIdx !== -1) {
+                    selChannelIndex = filteredIdx;
+                    playChannel(foundCh, filteredIdx);
+                }
+            } else {
+                showToast("کەناڵ نەهاتە دیتن");
+            }
+        }, 1200);
+    }
+
+    // ================= تایبەتمەندیێن Context Menu & Modal ================= //
+    
+    function saveChannelsToLocal() {
+        // گۆڕینا هەمی IDـیان دا کو ل گەل ڕیزبەندییا نوێ بگونجن
+        allChannels.forEach((c, idx) => c.id = idx + 1);
+        localStorage.setItem('custom_channels', JSON.stringify(allChannels));
+    }
+
+    function openContextMenu() {
+        isCtxOpen = true;
+        ctxIndex = 0;
+        updateCtxUI();
+        document.getElementById('context-menu').classList.add('show');
+    }
+
+    function closeContextMenu() {
+        isCtxOpen = false;
+        document.getElementById('context-menu').classList.remove('show');
+    }
+
+    function updateCtxUI() {
+        const items = document.querySelectorAll('.ctx-item');
+        items.forEach((el, idx) => {
+            if (idx === ctxIndex) el.classList.add('focused');
+            else el.classList.remove('focused');
+        });
+    }
+
+    function openModal(mode) {
+        closeContextMenu();
+        isModalOpen = true;
+        modalMode = mode;
+        modalBtnIndex = 0; // فوکس ل سەر دوگمەیا 'پاراستن' دکەت
+        
+        const targetCh = filteredChannels[selChannelIndex];
+        const titleEl = document.getElementById('modal-title');
+        const inputEl = document.getElementById('modal-input');
+        
+        if (mode === 'move') {
+            titleEl.innerText = "ژمارەیا نوێ بنڤیسە بۆ ڤەگوهاستنێ";
+            inputEl.type = "number";
+            inputEl.value = targetCh.id || (allChannels.indexOf(targetCh) + 1);
+        } else if (mode === 'edit') {
+            titleEl.innerText = "ناڤێ نوێ یێ کەناڵی بنڤیسە";
+            inputEl.type = "text";
+            inputEl.value = targetCh.name;
+        }
+        
+        updateModalUI();
+        document.getElementById('edit-modal').classList.add('show');
+        setTimeout(() => inputEl.focus(), 100);
+    }
+
+    function closeModal() {
+        isModalOpen = false;
+        document.getElementById('edit-modal').classList.remove('show');
+    }
+
+    function updateModalUI() {
+        document.getElementById('btn-save').classList.toggle('focused', modalBtnIndex === 0);
+        document.getElementById('btn-cancel').classList.toggle('focused', modalBtnIndex === 1);
+    }
+
+    function saveModal() {
+        const val = document.getElementById('modal-input').value;
+        const targetCh = filteredChannels[selChannelIndex];
+        const globalIndex = allChannels.indexOf(targetCh);
+        
+        if (modalMode === 'move') {
+            let newPos = parseInt(val);
+            if (!isNaN(newPos) && newPos > 0) {
+                allChannels.splice(globalIndex, 1);
+                let insertIndex = Math.max(0, Math.min(newPos - 1, allChannels.length));
+                allChannels.splice(insertIndex, 0, targetCh);
+                showToast("کەناڵ هاتە ڤەگوهاستن");
+            }
+        } else if (modalMode === 'edit') {
+            if (val.trim() !== '') {
+                targetCh.name = val.trim();
+                showToast("ناڤێ کەناڵی هاتە گۆڕین");
+            }
+        }
+        
+        saveChannelsToLocal();
+        updateFilteredChannels();
+        renderChannels();
+        closeModal();
+    }
+
+    function deleteChannel() {
+        const targetCh = filteredChannels[selChannelIndex];
+        const globalIndex = allChannels.indexOf(targetCh);
+        if (globalIndex > -1) {
+            allChannels.splice(globalIndex, 1);
+            saveChannelsToLocal();
+            updateFilteredChannels();
+            renderChannels();
+            showToast("کەناڵ هاتە مسح کرن");
+        }
+        closeContextMenu();
+    }
+
+    async function resetChannels() {
+        localStorage.removeItem('custom_channels');
+        showToast("کەناڵ هاتنە ڤەگەڕاندن بۆ بنەڕەت");
+        closeContextMenu();
+        await initApp();
+    }
+
+    // ================= کۆنترۆلا کیبۆردی و دوگمەیان ================= //
+
+    document.addEventListener('keydown', (e) => {
+        const key = e.keyCode;
+        const keyChar = e.key;
+        
+        // ١. کۆنترۆلا مۆدێلێ (پەنجەرەیا نڤیسینێ)
+        if (isModalOpen) {
+            if (key === 37 || key === 39) { // چەپ و ڕاست بۆ هەلبژارتنا دوگمەیان
+                modalBtnIndex = modalBtnIndex === 0 ? 1 : 0;
+                updateModalUI();
+                e.preventDefault();
+            } else if (key === 13) { // Enter
+                if (modalBtnIndex === 0) saveModal();
+                else closeModal();
+                e.preventDefault();
+            } else if ([8, 27, 461].includes(key)) { // Back
+                closeModal();
+                e.preventDefault();
+            }
+            return; 
         }
 
-        audioPlayer.addEventListener('error', function() {
-            if (isPlaying) {
-                setTimeout(() => {
-                    audioPlayer.load();
-                    audioPlayer.play();
-                }, 4000); 
+        // ٢. کۆنترۆلا Context Menu
+        if (isCtxOpen) {
+            if (key === 38) { // Up
+                if (ctxIndex > 0) ctxIndex--;
+                updateCtxUI();
+                e.preventDefault();
+            } else if (key === 40) { // Down
+                if (ctxIndex < ctxOptions.length - 1) ctxIndex++;
+                updateCtxUI();
+                e.preventDefault();
+            } else if (key === 13) { // Enter
+                let action = ctxOptions[ctxIndex];
+                if (action === 'move') openModal('move');
+                else if (action === 'edit') openModal('edit');
+                else if (action === 'delete') deleteChannel();
+                else if (action === 'reset') resetChannels();
+                e.preventDefault();
+            } else if ([8, 27, 461, 37].includes(key)) { // Back / Left
+                closeContextMenu();
+                e.preventDefault();
             }
-        });
+            return; 
+        }
 
-        audioPlayer.addEventListener('ended', function() {
-            if (isPlaying) {
-                setTimeout(() => {
-                    audioPlayer.load();
-                    audioPlayer.play();
-                }, 2000);
+        if (/^\d$/.test(keyChar)) {
+            handleNumberInput(keyChar);
+            e.preventDefault();
+            return;
+        }
+
+        // ٣. تایبەتمەندییا Long Press ل سەر دوگمەیا OK / Enter
+        if (key === 13 && isMenuOpen && activeColumn === 'channels') {
+            if (!e.repeat) {
+                isHoldingOk = true;
+                pressTimer = setTimeout(() => {
+                    isHoldingOk = false;
+                    openContextMenu();
+                }, 2000); // پشتی ٢ چرکەیان مینو ڤەدبیت
             }
-        });
+            e.preventDefault();
+            return; 
+        }
 
-        audioPlayer.addEventListener('stalled', function() {
-            if (isPlaying) {
-                setTimeout(() => {
-                    audioPlayer.load();
-                    audioPlayer.play();
-                }, 3000);
+        if ([8, 27, 10009, 461].includes(key)) {
+            if (isMenuOpen) { 
+                if (showGroups) {
+                    showGroups = false; activeColumn = 'channels';
+                    updateMenuClasses(); renderGroups(); renderChannels();
+                } else {
+                    toggleMenu(false);
+                }
+                e.preventDefault(); return; 
             }
-        });
+        }
 
-        buildTabs();
-        loadStation(currentStationIndex);
-    </script>
+        if (isMenuOpen) {
+            e.preventDefault();
+            if (activeColumn === 'channels') {
+                switch(key) {
+                    case 38:
+                        if (selChannelIndex > 0) selChannelIndex--;
+                        renderChannels(); break;
+                    case 40:
+                        if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
+                        renderChannels(); break;
+                    case 37:
+                        showGroups = true; activeColumn = 'groups'; 
+                        updateMenuClasses(); renderGroups(); renderChannels(); break;
+                    case 39:
+                        toggleMenu(false); break;
+                }
+            } else if (activeColumn === 'groups') {
+                switch(key) {
+                    case 38:
+                        if (selGroupIndex > 0) selGroupIndex--;
+                        updateFilteredChannels(); renderGroups(); break;
+                    case 40:
+                        if (selGroupIndex < groups.length - 1) selGroupIndex++;
+                        updateFilteredChannels(); renderGroups(); break;
+                    case 39: 
+                    case 13:
+                        showGroups = false; activeColumn = 'channels'; 
+                        updateMenuClasses(); renderGroups(); renderChannels(); break;
+                    case 37:
+                        toggleMenu(false); break;
+                }
+            }
+        } else {
+            if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
+            
+            switch(key) {
+                case 38: 
+                    if (playChannelIndex < filteredChannels.length - 1) {
+                        playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
+                    }
+                    break;
+                case 40: 
+                    if (playChannelIndex > 0) {
+                        playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
+                    }
+                    break;
+                case 37: 
+                case 13: 
+                    toggleMenu(true, false); break;
+                case 39: 
+                    showInfoBar(currentPlayingChannel); break;
+            }
+        }
+    });
 
+    // ٤. ئەگەر بەری ٢ چرکەیان پەنجە ڕاکرێت ل سەر دوگمەیا OK، دێ ب ئاسایی کەناڵی لێدەت
+    document.addEventListener('keyup', (e) => {
+        if (e.keyCode === 13 && isMenuOpen && activeColumn === 'channels' && !isCtxOpen && !isModalOpen) {
+            if (isHoldingOk) { 
+                clearTimeout(pressTimer);
+                isHoldingOk = false;
+                playChannel(filteredChannels[selChannelIndex], selChannelIndex);
+                toggleMenu(false);
+            }
+        }
+    });
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    initApp();
+
+</script>
 </body>
 </html>
