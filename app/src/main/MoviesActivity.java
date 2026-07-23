@@ -1,53 +1,52 @@
-package com.example.stvplayer;
+package com.yourname.stvplus; // ناڤێ پاکێجا خۆ لێرە بنڤیسە
 
-import android.content.Context;
-import android.content.Intent;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.webkit.JavascriptInterface;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MoviesActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
 
-    private WebView webView;
+    private WebView myWebView;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_movies); // دڵنیاببە ناڤێ XML یێ تە ڕاستە
+        
+        // شاردنەوەی شریتی سەرەوە بۆ ئەوەی شاشەکە پڕ بێت
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        webView = findViewById(R.id.webView);
+        myWebView = new WebView(this);
+        setContentView(myWebView);
 
-        // ڕێكخستنێن WebView
-        WebSettings webSettings = webView.getSettings();
+        WebSettings webSettings = myWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
-
-        // گرێدانا Javascript Interface
-        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidPlayer");
-
-        webView.setWebViewClient(new WebViewClient());
         
-        // لۆدکرنا پەڕگەیێ movies.html ژ فۆڵدەرێ assets
-        webView.loadUrl("file:///android_asset/movies.html");
+        // زۆر گرنگە بۆ تیڤی بۆکسێ
+        webSettings.setMediaPlaybackRequiresUserGesture(false); 
+        
+        webSettings.setAllowFileAccess(true);
+        webSettings.setLoadsImagesAutomatically(true);
+
+        myWebView.setWebViewClient(new WebViewClient());
+
+        // فایلێ خۆ یێ HTML لێرە ڤەکە
+        myWebView.loadUrl("file:///android_asset/index.html"); 
     }
 
-    // کلاسێ Interface بۆ وەرگرتنا لینکێ ژ HTML
-    public class WebAppInterface {
-        Context mContext;
-
-        WebAppInterface(Context c) {
-            mContext = c;
-        }
-
-        @JavascriptInterface
-        public void openMedia(String videoUrl) {
-            // شاندنا لینکێ بۆ هەمان ئەکتیڤیتیا ExoPlayer
-            Intent intent = new Intent(mContext, PlayerActivity.class); // PlayerActivity ناڤێ پلەیەرێ تە یە
-            intent.putExtra("VIDEO_URL", videoUrl);
-            mContext.startActivity(intent);
+    @Override
+    public void onBackPressed() {
+        if (myWebView.canGoBack()) {
+            myWebView.goBack();
+        } else {
+            super.onBackPressed();
         }
     }
 }
