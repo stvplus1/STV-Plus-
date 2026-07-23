@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- ExoPlayer Video View (ل پشتەوە کار دکەت بۆ نیشاندانا ڤیدیۆیێ) -->
-    <androidx.media3.ui.PlayerView
+    <!-- 1. پلەیەر ل پشتەڤە یە بۆ لێدانا ڤیدیۆیان -->
+    <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:use_controller="false"
-        app:surface_type="texture_view" />
+        android:layout_height="match_parent" />
 
-    <!-- WebView (ل پێشەوەیە و شەفافە بۆ نیشاندانا دیزاینا HTML) -->
+    <!-- 2. وێبڤیو ل پێشیێ یە و باکگراوەندێ وێ یێ شەفافە بۆ دیزاینا HTML -->
     <WebView
-        android:id="@+id/webview"
+        android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/transparent" />
 
-</FrameLayout>
+</RelativeLayout>
