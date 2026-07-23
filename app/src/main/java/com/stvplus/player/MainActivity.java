@@ -1,5 +1,6 @@
-package com.stvplus.player; // تێبینی: ئەگەر ناڤێ پاکێجا تە جودایە، تەنێ ڤێ ڕێزا ئێکێ بکە ناڤێ پاکێجا خۆ
+package com.stvplus.player;
 
+import com.stvplus.R; // ئەڤەیە چارەسەریا سەرەکی یا کێشەیێ
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,6 +11,8 @@ import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
+// ... کۆدێ دی هەمی وەکو خۆ بهێلە بێی چ گۆڕانکاری ...
+
 
     private WebView webView;
 
