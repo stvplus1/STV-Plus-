@@ -1,9 +1,9 @@
-package com.yourname.stvplus; // لێرە ناڤێ پاکێجا خۆ بنڤیسە
+package com.stvplus.player; // تێبینی: ئەگەر ناڤێ پاکێجا تە جودایە، تەنێ ڤێ ڕێزا ئێکێ بکە ناڤێ پاکێجا خۆ
 
-import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.Window;
-import android.view.WindowManager;
+import android.webkit.DownloadListener;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -11,47 +11,48 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private WebView myWebView;
+    private WebView webView;
 
-    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // شاردنەوەی شریتی سەرەوە بۆ ئەوەی شاشەکە پڕ بێت (Full Screen)
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        // پەیوەستکرن ب دیزاینا شاشەیێ ڤە (کو پێدڤییە WebView تێدا هەبیت)
+        setContentView(R.layout.activity_main);
 
-        // دروستکرنا WebView ڕاستەوخۆ
-        myWebView = new WebView(this);
-        setContentView(myWebView);
+        webView = findViewById(R.id.webView);
 
-        // ڕێکخستنێن گرنگ بۆ WebView (بۆ خێرایی و تیڤی بۆکس)
-        WebSettings webSettings = myWebView.getSettings();
-        webSettings.setJavaScriptEnabled(true); // کارپێکرنا جاڤاسکریپتێ
-        webSettings.setDomStorageEnabled(true); // ڕێگەدان ب خەزنکرنا زانیاریان د کۆدێ HTML دا
-        
-        // ئەڤە زۆر گرنگە بۆ تیڤی بۆکسێ، دا کو ڤیدیۆ بێی دەستلێدان (Touch) ڕاستەوخۆ کار بکەت
-        webSettings.setMediaPlaybackRequiresUserGesture(false); 
-        
+        // ڕێکخستنێن WebView بۆ کارپێکرنا جاڤاسکریپت و داتایان
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
         webSettings.setAllowFileAccess(true);
-        webSettings.setLoadsImagesAutomatically(true);
 
-        // ڕێگری دکەت ل ڤەکرنا وێبگەڕێ دەرەکی (Chrome)، هەمی تشت د ناڤ ئەپێ دا دەمێنێت
-        myWebView.setWebViewClient(new WebViewClient());
+        // بۆ هندێ کو فایل د ناو خودی بەرنامەی دا ڤەبن نەک بڕنە دەرڤە
+        webView.setWebViewClient(new WebViewClient());
 
-        // فایلێ خۆ یێ HTML لێرە ڤەکە (ئەگەر د ناڤ فۆلدەرێ assets بیت)
-        myWebView.loadUrl("file:///android_asset/index.html"); 
-        
-        // یان ئەگەر فایلێ تە ل سەر ئینتەرنێتێ یە ئەڤێ هێڵێ بکار بینە و هێڵا سەرێ بسڕە:
-        // myWebView.loadUrl("https://your-website-link.com/index.html");
+        // ==========================================================
+        // ئەڤەیە پێنگاڤا دووێ (گرنگترین بەش بۆ دابەزاندنا ئاپدەیتێ)
+        // ==========================================================
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                // دەمێ فەرمانا دابەزاندنێ دهێت (وەکو لینکا ئاپدەیتێ ل index.html)
+                // دێ ڕاستەوخۆ کرۆم یان وێبگەرێ مۆبایلێ ڤەکەت دا فایلێ APK دابەزینیت
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(url));
+                startActivity(intent);
+            }
+        });
+
+        // لۆدکرنا فایلا سەرەکی یا بەرنامەیێ تە ژ ناو فۆلدەرێ assets
+        webView.loadUrl("file:///android_asset/index.html");
     }
-
-    // کۆنترۆلکرنا پێلۆکا ڤەگەڕیانێ (Back Button) یێ کۆنترۆلێ
+    
+    // ئەگەر تە دڤێت دوگمەیا 'Back' ب دروستی کار بکەت د ناو وێبڤیوی دا
     @Override
     public void onBackPressed() {
-        if (myWebView.canGoBack()) {
-            myWebView.goBack();
+        if (webView.canGoBack()) {
+            webView.goBack();
         } else {
             super.onBackPressed();
         }
