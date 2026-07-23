@@ -86,6 +86,7 @@
         .ch-item {
             display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
             transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02);
+            /* تایبەتمەندیێن نوی بۆ خێراترین لۆدکرن ل سەر ئامێرێن لاواز */
             content-visibility: auto; 
             contain-intrinsic-size: 61px;
             will-change: background, border-color;
@@ -102,55 +103,6 @@
 
         #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.2s; }
         #toast.show { opacity: 1; }
-
-        /* --- ستایلێن شاشەیا ئاپدەیتێ --- */
-        #update-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
-            z-index: 99999; display: none; justify-content: center; align-items: center;
-            direction: ltr; font-family: 'Segoe UI', Tahoma, sans-serif;
-        }
-
-        .update-box {
-            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
-            width: 90%; max-width: 380px; padding: 40px 30px;
-            border-radius: 24px; text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 20px 50px rgba(229, 9, 20, 0.2);
-            position: relative; overflow: hidden;
-        }
-
-        .update-box::before {
-            content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
-            width: 150px; height: 150px; background: rgba(229, 9, 20, 0.15);
-            filter: blur(50px); z-index: 0; pointer-events: none;
-        }
-
-        .icon-glow {
-            position: relative; z-index: 1; font-size: 45px; color: #e50914;
-            margin-bottom: 20px; text-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
-            animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-
-        .update-box h2 { position: relative; z-index: 1; color: white; font-size: 22px; font-weight: 800; margin-bottom: 5px; letter-spacing: 1px; }
-        .text-red { position: relative; z-index: 1; color: #e50914; font-size: 14px; font-weight: bold; margin-bottom: 20px; }
-        .desc { position: relative; z-index: 1; color: #aaa; font-size: 14px; line-height: 1.5; margin-bottom: 30px; padding: 0 10px; }
-
-        #btn-update {
-            position: relative; z-index: 1;
-            background: linear-gradient(90deg, #e50914 0%, #b30710 100%);
-            color: white; border: none; padding: 15px 0; width: 100%;
-            border-radius: 12px; font-size: 15px; font-weight: bold;
-            letter-spacing: 1px; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 8px 20px rgba(229, 9, 20, 0.3); outline: none;
-        }
-        #btn-update:hover, #btn-update:focus { transform: scale(1.03); box-shadow: 0 10px 25px rgba(229, 9, 20, 0.5); border: 2px solid white; }
-
-        #update-progress-container { display: none; position: relative; z-index: 1; margin-top: 10px; text-align: left; }
-        .progress-text { color: #e50914; font-size: 14px; font-weight: bold; margin-bottom: 10px; }
-        .progress-bar-bg { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
-        .progress-bar-fill { width: 0%; height: 100%; background: #e50914; border-radius: 10px; transition: width 0.4s ease; box-shadow: 0 0 10px rgba(229, 9, 20, 0.8); }
     </style>
 </head>
 <body>
@@ -187,70 +139,7 @@
     <div id="toast"></div>
 </div>
 
-<!-- شاشەیا ئاپدەیتێ ل پێشیێ -->
-<div id="update-overlay">
-    <div class="update-box">
-        <div class="icon-glow">
-            <i class="fas fa-rocket"></i>
-        </div>
-        <h2>UPDATE AVAILABLE</h2>
-        <h4 class="text-red">STv+ is getting better</h4>
-        <p class="desc">New update available! Let's update it to enjoy the latest features and improved stability.</p>
-        
-        <button id="btn-update" onclick="startUpdate()">LET'S UPDATE IT</button>
-        
-        <div id="update-progress-container">
-            <div class="progress-text">Downloading Update... <span id="progress-percent">0%</span></div>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" id="progress-fill"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    // --- بەشێ ئاپدەیتێ (Update) ---
-    const APP_VERSION = 1.0; 
-    const UPDATE_JSON_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/update.json"; 
-    let downloadApkUrl = "";
-    let isUpdating = false;
-
-    function checkForUpdate() {
-        fetch(UPDATE_JSON_URL + '?t=' + Date.now())
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.version > APP_VERSION) {
-                    downloadApkUrl = data.apk_url;
-                    isUpdating = true;
-                    document.getElementById('update-overlay').style.display = 'flex';
-                    document.getElementById('btn-update').focus();
-                }
-            })
-            .catch(err => console.log("No update available.", err));
-    }
-
-    window.startUpdate = function() {
-        document.getElementById('btn-update').style.display = 'none';
-        document.getElementById('update-progress-container').style.display = 'block';
-        
-        let percent = 0;
-        let downloadInterval = setInterval(() => {
-            percent += Math.floor(Math.random() * 5) + 1;
-            if (percent >= 100) percent = 100;
-            
-            document.getElementById('progress-percent').innerText = percent + "%";
-            document.getElementById('progress-fill').style.width = percent + "%";
-            
-            if (percent >= 100) {
-                clearInterval(downloadInterval);
-                setTimeout(() => {
-                    window.location.href = downloadApkUrl; 
-                }, 500);
-            }
-        }, 150);
-    };
-
-    // --- بەشێ سەرەکی یێ کەناڵان ---
     const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
     
     let allChannels = [];
@@ -302,9 +191,6 @@
     };
 
     async function initApp() {
-        // پشکنین بۆ ئاپدەیتێ ڕاستەوخۆ دەمێ بەرنامە ڤەدبیت
-        checkForUpdate();
-
         try {
             let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
             allChannels = await res.json();
@@ -383,23 +269,7 @@
         scrollToItem('ch-' + newIdx);
     }
 
-    function updatePlayingState(oldCh, newCh) {
-        if (oldCh) {
-            let oldIdx = filteredChannels.findIndex(c => c.id === oldCh.id);
-            if (oldIdx !== -1) {
-                let el = document.getElementById('ch-' + oldIdx);
-                if (el) el.classList.remove('playing');
-            }
-        }
-        if (newCh) {
-            let newIdx = filteredChannels.findIndex(c => c.id === newCh.id);
-            if (newIdx !== -1) {
-                let el = document.getElementById('ch-' + newIdx);
-                if (el) el.classList.add('playing');
-            }
-        }
-    }
-
+    // فەنکشنێ کلیککرنێ یێ گشتی بۆ خێراترکرنێ
     window.handleChannelClick = function(idx) {
         activeColumn = 'channels';
         let oldIdx = selChannelIndex;
@@ -409,6 +279,7 @@
         toggleMenu(false); 
     };
 
+    // فەنکشنێ renderChannels ب شێوازێ String Builder
     function renderChannels() {
         const list = document.getElementById('channels-list');
         
@@ -501,7 +372,6 @@
 
     function playChannel(ch, indexInFiltered) {
         if (!ch) return;
-        let oldPlaying = currentPlayingChannel; 
         currentPlayingChannel = ch;
         playGroupIndex = selGroupIndex;
         playChannelIndex = indexInFiltered;
@@ -515,7 +385,7 @@
 
         showInfoBar(ch);
         if(isMenuOpen) {
-            updatePlayingState(oldPlaying, ch); 
+            renderChannels(); 
         }
 
         const loader = document.getElementById('loader');
@@ -606,9 +476,6 @@
     }
 
     document.addEventListener('keydown', (e) => {
-        // ئەگەر شاشەیا ئاپدەیتێ یا ڤەکری بیت، مەجالێ نەدە کەناڵان بگۆڕیت
-        if (isUpdating) return;
-
         const key = e.keyCode;
         const keyChar = e.key;
         
@@ -634,14 +501,14 @@
             e.preventDefault();
             if (activeColumn === 'channels') {
                 switch(key) {
-                    case 38: 
+                    case 38: // UP
                         if (selChannelIndex > 0) {
                             let oldIdx = selChannelIndex;
                             selChannelIndex--;
                             updateChannelFocus(oldIdx, selChannelIndex);
                         }
                         break;
-                    case 40: 
+                    case 40: // DOWN
                         if (selChannelIndex < filteredChannels.length - 1) {
                             let oldIdx = selChannelIndex;
                             selChannelIndex++;
@@ -677,12 +544,12 @@
             if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
             
             switch(key) {
-                case 38: 
+                case 38: // UP -> کەناڵێ داهاتی
                     if (playChannelIndex < filteredChannels.length - 1) {
                         playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
                     }
                     break;
-                case 40: 
+                case 40: // DOWN -> کەناڵێ پێشتر
                     if (playChannelIndex > 0) {
                         playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
                     }
