@@ -159,9 +159,8 @@
 
     const videoElement = document.getElementById('main-video');
 
-    // **سیستەمێ ڤەگەڕاندنا خۆکار (Auto Reconnect) پشتی ٣ چرکەیان**
     function triggerAutoReconnect() {
-        if (reconnectTimer) return; // ڕێگری ل دروستبوونا چەندین تایمەران ب هەڤڕا
+        if (reconnectTimer) return;
         
         document.getElementById('loader').style.display = 'block';
         reconnectTimer = setTimeout(() => {
@@ -172,12 +171,10 @@
         }, 3000);
     }
 
-    // پشکنینا راوەستیان و کێشەیێن HTML5 Video Element
     videoElement.onerror = () => triggerAutoReconnect();
     videoElement.onstalled = () => triggerAutoReconnect();
     videoElement.onwaiting = () => {
         clearTimeout(stallTimer);
-        // ئەگەر پتر ژ ٥ چرکەیان ڕاوەستیا و Buffer نەهات، هەوڵا دووبارە بدە
         stallTimer = setTimeout(() => {
             triggerAutoReconnect();
         }, 5000);
@@ -258,6 +255,16 @@
         scrollToItem('grp-' + selGroupIndex);
     }
 
+    function updateChannelFocus(oldIdx, newIdx) {
+        let oldEl = document.getElementById('ch-' + oldIdx);
+        if (oldEl) oldEl.classList.remove('focused');
+        
+        let newEl = document.getElementById('ch-' + newIdx);
+        if (newEl) newEl.classList.add('focused');
+        
+        scrollToItem('ch-' + newIdx);
+    }
+
     function renderChannels() {
         const list = document.getElementById('channels-list');
         list.innerHTML = '';
@@ -266,6 +273,8 @@
             list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
             return;
         }
+
+        const fragment = document.createDocumentFragment();
 
         filteredChannels.forEach((ch, idx) => {
             let div = document.createElement('div');
@@ -279,7 +288,7 @@
             div.id = 'ch-' + idx;
             div.innerHTML = `
                 <div class="ch-num">${displayNum}</div>
-                <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <img class="ch-logo" src="${ch.logo}" loading="lazy" onerror="this.src='https://via.placeholder.com/40'">
                 <div class="ch-info">
                     <div class="ch-name">${ch.name}</div>
                     <div class="ch-epg">No information</div>
@@ -287,13 +296,19 @@
             `;
             div.onclick = () => { 
                 activeColumn = 'channels';
+                let oldIdx = selChannelIndex;
                 selChannelIndex = idx;
+                updateChannelFocus(oldIdx, idx);
                 playChannel(ch, idx); 
                 toggleMenu(false); 
             };
-            list.appendChild(div);
+            fragment.appendChild(div);
         });
-        scrollToItem('ch-' + selChannelIndex);
+        
+        list.appendChild(fragment);
+        requestAnimationFrame(() => {
+            scrollToItem('ch-' + selChannelIndex);
+        });
     }
 
     function scrollToItem(id) {
@@ -363,7 +378,10 @@
         localStorage.setItem('last_channel_id', channelIdToSave);
 
         showInfoBar(ch);
-        if(isMenuOpen) renderChannels(); 
+        if(isMenuOpen) {
+            // نویكرنه‌ڤه‌یا لیستا كه‌ناڵان دا كو نیشانا "playing" بگۆڕیت
+            renderChannels(); 
+        }
 
         const loader = document.getElementById('loader');
         const videoContainer = document.getElementById('videoContainer');
@@ -387,7 +405,6 @@
                     hls.attachMedia(videoElement);
                     hls.on(Hls.Events.MANIFEST_PARSED, () => videoElement.play().catch(() => triggerAutoReconnect()));
                     
-                    // گرتنا هەمی تێکچوون و کێشەیێن HLS
                     hls.on(Hls.Events.ERROR, (event, data) => {
                         if (data.fatal) {
                             triggerAutoReconnect();
@@ -407,7 +424,6 @@
             shaka.polyfill.installAll();
             window.shakaPlayer = new shaka.Player(videoElement);
             
-            // گرتنا هەڵەیێن Shaka
             window.shakaPlayer.addEventListener('error', () => triggerAutoReconnect());
 
             if (ch.drmKeyId && ch.drmKey) {
@@ -480,12 +496,20 @@
             e.preventDefault();
             if (activeColumn === 'channels') {
                 switch(key) {
-                    case 38:
-                        if (selChannelIndex > 0) selChannelIndex--;
-                        renderChannels(); break;
-                    case 40:
-                        if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
-                        renderChannels(); break;
+                    case 38: // UP
+                        if (selChannelIndex > 0) {
+                            let oldIdx = selChannelIndex;
+                            selChannelIndex--;
+                            updateChannelFocus(oldIdx, selChannelIndex);
+                        }
+                        break;
+                    case 40: // DOWN
+                        if (selChannelIndex < filteredChannels.length - 1) {
+                            let oldIdx = selChannelIndex;
+                            selChannelIndex++;
+                            updateChannelFocus(oldIdx, selChannelIndex);
+                        }
+                        break;
                     case 37:
                         showGroups = true; activeColumn = 'groups'; 
                         updateMenuClasses(); renderGroups(); renderChannels(); break;
