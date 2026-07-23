@@ -1,27 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.yourname.stvplus"> <!-- لێرە ناڤێ پاکێجا خۆ بنڤیسە -->
 
-    <!-- ڕێپێدانێن پێدڤی بۆ ئەنتەرنێتێ و پەخشی ڕاستەوخۆ -->
+    <!-- ڕێپێدانێن ئینتەرنێتێ کو پێویستن بۆ کەناڵان -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- ئەڤ دوو هێڵە زۆر گرنگن بۆ ئەوەی تیڤی بۆکس بزانێت کو پێویست ب لەمسێ (Touch) ناکەت -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
     <application
         android:allowBackup="true"
-        android:icon="@drawable/app_logo"
-        android:roundIcon="@drawable/app_logo"
-        android:label="STv+ Player"
+        android:icon="@mipmap/ic_launcher"
+        android:label="STv+ Pro"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:usesCleartextTraffic="true">
-        
+        android:usesCleartextTraffic="true"> <!-- گرنگە بۆ ڤەکرنا لینکێن http -->
+
+        <!-- ئەڤە شاشەیا سەرەکییە (Activity) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:screenOrientation="landscape" 
             android:configChanges="orientation|keyboardHidden|screenSize">
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                
+                <!-- ئەڤە وادەکەت ل سەر مۆبایلێ دیار ببیت -->
                 <category android:name="android.intent.category.LAUNCHER" />
+                
+                <!-- ئەڤە وادەکەت ل سەر تیڤی بۆکس و ئایپادێ ناو ترۆمبێلێ دیار ببیت -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
+
 </manifest>
