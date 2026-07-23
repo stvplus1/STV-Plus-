@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ku" dir="rtl">
 <head>
@@ -240,9 +239,80 @@
             }
             .icon-box { margin: 0; width: 45px; height: 45px; }
         }
+
+        /* --- ستایلێن شاشەیا ئاپدەیتێ --- */
+        #update-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(8, 2, 18, 0.95); backdrop-filter: blur(8px);
+            z-index: 99999; display: none; justify-content: center; align-items: center;
+            direction: ltr; font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        .update-box {
+            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+            width: 90%; max-width: 380px; padding: 40px 30px;
+            border-radius: 24px; text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 50px rgba(229, 9, 20, 0.2);
+            position: relative; overflow: hidden;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .update-box::before {
+            content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+            width: 150px; height: 150px; background: rgba(229, 9, 20, 0.15);
+            filter: blur(50px); z-index: 0; pointer-events: none;
+        }
+
+        .icon-glow {
+            position: relative; z-index: 1; font-size: 45px; color: var(--red);
+            margin-bottom: 20px; text-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        .update-box h2 { position: relative; z-index: 1; color: white; font-size: 22px; font-weight: 800; margin-bottom: 5px; letter-spacing: 1px; }
+        .text-red { position: relative; z-index: 1; color: var(--red); font-size: 14px; font-weight: bold; margin-bottom: 20px; }
+        .desc { position: relative; z-index: 1; color: #aaa; font-size: 14px; line-height: 1.5; margin-bottom: 30px; padding: 0 10px; }
+
+        #btn-update {
+            position: relative; z-index: 1;
+            background: linear-gradient(90deg, #ff4757 0%, #d82a39 100%);
+            color: white; border: none; padding: 15px 0; width: 100%;
+            border-radius: 12px; font-size: 15px; font-weight: bold;
+            letter-spacing: 1px; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.3); outline: none;
+        }
+        #btn-update:hover, #btn-update:focus { transform: scale(1.03); box-shadow: 0 10px 25px rgba(255, 71, 87, 0.5); border: 2px solid white; }
+
+        #update-progress-container { display: none; position: relative; z-index: 1; margin-top: 10px; text-align: left; }
+        .progress-text { color: var(--red); font-size: 14px; font-weight: bold; margin-bottom: 10px; }
+        .progress-bar-bg { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { width: 0%; height: 100%; background: var(--red); border-radius: 10px; transition: width 0.4s ease; box-shadow: 0 0 10px rgba(255, 71, 87, 0.8); }
     </style>
 </head>
 <body>
+
+    <!-- شاشەیا ئاپدەیتێ ل سەرۆڤەیا هەمی تشتان -->
+    <div id="update-overlay">
+        <div class="update-box">
+            <div class="icon-glow">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h2>UPDATE AVAILABLE</h2>
+            <h4 class="text-red">STv+ is getting better</h4>
+            <p class="desc">New update available! Let's update it to enjoy the latest features and improved stability.</p>
+            
+            <button id="btn-update" onclick="startUpdate()">LET'S UPDATE IT</button>
+            
+            <div id="update-progress-container">
+                <div class="progress-text">Downloading Update... <span id="progress-percent">0%</span></div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="main-container">
         <header>
@@ -281,7 +351,6 @@
         </div>
 
         <main id="mainSection" class="menu-grid hidden">
-            <!-- ل ڤێرە لینکا tv.html بۆ کەنالان هاتە زێدەکرن -->
             <a href="tv.html" class="card-link">
                 <div class="card red">
                     <div class="icon-box"><i class="fas fa-tv"></i></div>
@@ -292,7 +361,6 @@
                 </div>
             </a>
 
-            <!-- ل ڤێرە لینکا tv.html بۆ پەخشی ڕاستەوخۆ هاتە زێدەکرن -->
             <a href="movies.html" class="card-link">
                 <div class="card red">
                     <div class="icon-box"><i class="fas fa-tablet-alt"></i></div>
@@ -303,7 +371,6 @@
                 </div>
             </a>
 
-            <!-- ل ڤێرە لینکا movies.html بۆ فیلمەکان هاتە زێدەکرن -->
             <a href="movies.html" class="card-link">
                 <div class="card purple">
                     <div class="icon-box"><i class="fas fa-film"></i></div>
@@ -317,6 +384,52 @@
     </div>
 
     <script>
+        // ==========================================
+        // لۆژیکا ئاپدەیتێ (Update System)
+        // ==========================================
+        const APP_VERSION = 1.0; 
+        const UPDATE_JSON_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/update.json"; 
+        let downloadApkUrl = "";
+
+        function checkForUpdate() {
+            fetch(UPDATE_JSON_URL + '?t=' + Date.now())
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.version > APP_VERSION) {
+                        downloadApkUrl = data.apk_url;
+                        document.getElementById('update-overlay').style.display = 'flex';
+                    }
+                })
+                .catch(err => console.log("No update available or network error."));
+        }
+
+        window.startUpdate = function() {
+            document.getElementById('btn-update').style.display = 'none';
+            document.getElementById('update-progress-container').style.display = 'block';
+            
+            let percent = 0;
+            let downloadInterval = setInterval(() => {
+                percent += Math.floor(Math.random() * 5) + 1;
+                if (percent >= 100) percent = 100;
+                
+                document.getElementById('progress-percent').innerText = percent + "%";
+                document.getElementById('progress-fill').style.width = percent + "%";
+                
+                if (percent >= 100) {
+                    clearInterval(downloadInterval);
+                    setTimeout(() => {
+                        window.location.href = downloadApkUrl; 
+                    }, 500);
+                }
+            }, 150);
+        };
+
+        // کارپێکرنا پشکنینا ئاپدەیتێ ڕاستەوخۆ دەمێ بەرنامە ڤەدبیت
+        checkForUpdate();
+
+        // ==========================================
+        // لۆژیکا چالاککرنێ (Activation System)
+        // ==========================================
         let deviceID = localStorage.getItem('user_device_id');
         let isActivated = localStorage.getItem('is_pro_activated');
         let firstVisitTime = localStorage.getItem('first_visit_time');
@@ -385,7 +498,7 @@
         }
 
         function openWhatsApp() {
-            const phoneNumber = "9647502161339"; 
+            const phoneNumber = "07502161339"; 
             const textMsg = encodeURIComponent("سلاڤ، ماوێ تاقیکرنێ ب دوماهی هات و من دڤێت بەرنامەیی ئەکتیڤ بکەم.\nکۆدێ مۆبایلا من ئەڤەیە: " + deviceID);
             window.open("https://wa.me/" + phoneNumber + "?text=" + textMsg, "_blank");
         }
