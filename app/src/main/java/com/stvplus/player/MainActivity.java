@@ -1,5 +1,8 @@
 package com.stvplus.player;
 
+// گرێدانا دیزاینێ ب ناڤێ دروست یێ پاکێجا تە
+import com.yourname.stvplus.R; 
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -16,12 +19,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
         // گرێدانا جاڤا ب دیزاینا شاشەیێ ڤە
         setContentView(R.layout.activity_main);
 
         webView = findViewById(R.id.webView);
 
-        // ڕێکخستنێن WebView بۆ کارپێکرنا جاڤاسکریپت
+        // ڕێکخستنێن WebView بۆ کارپێکرنا جاڤاسکریپت و فایلان
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -39,11 +43,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // لۆدکرنا فایلا index.html
+        // لۆدکرنا فایلا سەرەکی (شاشەیا چالاککرن و ئاپدەیتێ)
         webView.loadUrl("file:///android_asset/index.html");
     }
     
-    // کۆنترۆلا دوگمەیا ڤەگەڕانێ (Back Button)
+    // کۆنترۆلا دوگمەیا ڤەگەڕانێ (Back Button) دا کو ژ بەرنامەی دەرنەکەڤیت
     @Override
     public void onBackPressed() {
         if (webView.canGoBack()) {
