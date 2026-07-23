@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.yourname.stvplus"> <!-- لێرە ناڤێ پاکێجا خۆ بنڤیسە -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- ڕێپێدانێن ئینتەرنێتێ کو پێویستن بۆ کەناڵان -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -17,7 +16,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:usesCleartextTraffic="true"> <!-- گرنگە بۆ ڤەکرنا لینکێن http -->
+        android:usesCleartextTraffic="true">
 
         <!-- ئەڤە شاشەیا سەرەکییە (Activity) -->
         <activity
@@ -32,7 +31,7 @@
                 <!-- ئەڤە وادەکەت ل سەر مۆبایلێ دیار ببیت -->
                 <category android:name="android.intent.category.LAUNCHER" />
                 
-                <!-- ئەڤە وادەکەت ل سەر تیڤی بۆکس و ئایپادێ ناو ترۆمبێلێ دیار ببیت -->
+                <!-- ئەڤە وادەکەت ل سەر تیڤی بۆکس دیار ببیت -->
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
