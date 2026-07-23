@@ -238,5 +238,125 @@
     "group": "کوردستان",
     "logo": "https://karwan.tv/wp-content/uploads/barin-movies-1.png",
     "url": "https://raw.githubusercontent.com/stvplus1/LOCAL/refs/heads/main/BarinTv.m3u8"
+  },
+
+
+
+
+
+
+
+
+
+
+  
+  {
+    "id": 154,
+    "name": "Iraq Tv",
+    "group": "عەرەبی",
+    "logo": "https://files.cdn-files-a.com/uploads/278563/800_699dd7bd5f906.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/iraq1.m3u8"
+  },
+  {
+    "id": 155,
+    "name": "Iraq Sport",
+    "group": "عەرەبی",
+    "logo": "https://files.cdn-files-a.com/uploads/278563/400_6a3db996181fa.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/iraq2.m3u8"
+  },
+  {
+    "id": 160,
+    "name": "Al Jazeera HD",
+    "group": "عەرەبی",
+    "logo": "https://stv-pro.wap.sh/Arab/Jazeera.png",
+    "url": "http://live-hls-web-aja.getaj.net/AJA/02.m3u8"
+  },
+  {
+    "id": 165,
+    "name": "Al Arabiya",
+    "group": "عەرەبی",
+    "logo": "https://stv-pro.wap.sh/Arab/Al-arabia.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/AlArabiya.m3u8"
+  },
+  {
+    "id": 171,
+    "name": "BBC Arabic",
+    "group": "عەرەبی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/9/93/BBC_News_Arabic_logo.png",
+    "url": "https://vs-hls-pushb-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_arabic_tv/pc_hd_abr_v2.m3u8"
+  },
+  {
+    "id": 172,
+    "name": "Sky Arabic",
+    "group": "عەرەبی",
+    "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgtUeBnHM3eaXFXY7UyyQanPOIiU2NyibtoBRtnr4YGdp8-bJkNFiXBg&s=10",
+    "url": "https://stream.skynewsarabia.com/hls/sna.m3u8"
+  },
+  {
+    "id": 174,
+    "name": "MBC 1",
+    "group": "عەرەبی",
+    "logo": "https://shahid.mbc.net/mediaObject/cee00d24-d0ee-4382-ac72-b2de5dee0331?height=auto&width=144&croppingPoint=&version=1&type=avif",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/MBC1.m3u8"
+  },
+  {
+    "id": 175,
+    "name": "MBC 2 HD",
+    "group": "عەرەبی",
+    "logo": "https://shahid.mbc.net/mediaObject/39923955-895b-4f40-9374-874b1e314566?height=auto&width=144&croppingPoint=&version=1&type=avif",
+    "url": "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-2/51db9d7fa48a27d051f1eecb68069151/index.mpd",
+    "type": "dash",
+    "drmKeyId": "e3ce77324a3d4fa2a913b26cc1976052",
+    "drmKey": "17774f82a3b9e33ea7a149596acbb20f"
+  },
+  {
+    "id": 176,
+    "name": "MBC 3",
+    "group": "عەرەبی",
+    "logo": "https://shahid.mbc.net/mediaObject/6bcdb5e5-d974-4feb-97dc-1bad851b0c1d?height=auto&width=144&croppingPoint=&version=1&type=avif",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/Mbc3.m3u8"
+  },
+  {
+    "id": 177,
+    "name": "MBC 4",
+    "group": "عەرەبی",
+    "logo": "https://shahid.mbc.net/mediaObject/d280bcb0-2135-4919-af1a-f1c8c5fb99e3?height=auto&width=144&croppingPoint=&version=1&type=avif",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/Mbc4.m3u8"
+  },
+  {
+    "id": 186,
+    "name": "MBC Action",
+    "group": "عەرەبی",
+    "logo": "https://files.cdn-files-a.com/uploads/278563/400_69f20f0be4732.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/MbcAction.m3u8"
+  },
+  {
+    "id": 196,
+    "name": "Shahid VIP 1",
+    "group": "عەرەبی",
+    "logo": "https://files.cdn-files-a.com/uploads/278563/800_6926ebc5af40f.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/Shahid1.m3u8"
+  },
+  {
+    "id": 1000,
+    "name": "KTV Ethraa (1080p)",
+    "group": "عەرەبی",
+    "logo": "https://i.imgur.com/hqEbc49.png",
+    "url": "https://kwtethta.cdn.mangomolo.com/eth/smil:eth.stream.smil/chunklist.m3u8"
+  },
+  {
+    "id": 1001,
+    "name": "KTV News (1080p)",
+    "group": "عەرەبی",
+    "logo": "https://i.imgur.com/erZ0Ol1.png",
+    "url": "https://kwtkbta.cdn.mangomolo.com/kb/smil:kb.stream.smil/chunklist.m3u8"
+  },
+  {
+    "id": 1003,
+    "name": "Kurdsat (1080p)",
+    "group": "عەرەبی",
+    "logo": "https://i.imgur.com/UAbSwYA.png",
+    "url": "https://hlspackager.akamaized.net/live/DB/KURDSAT_HD/HLS/KURDSAT_HD.m3u8"
   }
 ]
+
