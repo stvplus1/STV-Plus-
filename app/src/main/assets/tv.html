@@ -66,7 +66,13 @@
         #tivi-menu.show-groups #col-groups { margin-left: 0; }
 
         .col-header { padding: 20px; font-size: 18px; font-weight: bold; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .list-container { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 10px 0; }
+        
+        .list-container { 
+            flex: 1; overflow-y: auto; scrollbar-width: none; padding: 10px 0;
+            /* هاریکاریا GPU بۆ خلیسکانەکا نەرم ل سەر مۆبایل و ئایپادێ */
+            -webkit-overflow-scrolling: touch; 
+            transform: translateZ(0);
+        }
         .list-container::-webkit-scrollbar { display: none; }
         
         .group-item {
@@ -86,6 +92,10 @@
         .ch-item {
             display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
             transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02);
+            /* تایبەتمەندیێن نوی بۆ خێراترین لۆدکرن */
+            content-visibility: auto; 
+            contain-intrinsic-size: 61px;
+            will-change: background, border-color;
         }
         .ch-item.selected { background: var(--tivi-grey); }
         .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
@@ -265,47 +275,65 @@
         scrollToItem('ch-' + newIdx);
     }
 
+    // فەنکشنێ نوی بۆ گۆهڕینا ڕەنگێ کەسک بێی کو هەمی لیست دروست ببیتەڤە
+    function updatePlayingState(oldCh, newCh) {
+        if (oldCh) {
+            let oldIdx = filteredChannels.findIndex(c => c.id === oldCh.id);
+            if (oldIdx !== -1) {
+                let el = document.getElementById('ch-' + oldIdx);
+                if (el) el.classList.remove('playing');
+            }
+        }
+        if (newCh) {
+            let newIdx = filteredChannels.findIndex(c => c.id === newCh.id);
+            if (newIdx !== -1) {
+                let el = document.getElementById('ch-' + newIdx);
+                if (el) el.classList.add('playing');
+            }
+        }
+    }
+
+    window.handleChannelClick = function(idx) {
+        activeColumn = 'channels';
+        let oldIdx = selChannelIndex;
+        selChannelIndex = idx;
+        updateChannelFocus(oldIdx, idx);
+        playChannel(filteredChannels[idx], idx); 
+        toggleMenu(false); 
+    };
+
     function renderChannels() {
         const list = document.getElementById('channels-list');
-        list.innerHTML = '';
         
         if (filteredChannels.length === 0) {
             list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
             return;
         }
 
-        const fragment = document.createDocumentFragment();
-
-        filteredChannels.forEach((ch, idx) => {
-            let div = document.createElement('div');
-            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex);
-            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
-            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
+        let html = "";
+        let len = filteredChannels.length;
+        
+        for(let idx = 0; idx < len; idx++) {
+            let ch = filteredChannels[idx];
+            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex) ? 'focused' : '';
+            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex) ? 'selected' : '';
+            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id) ? 'playing' : '';
             
             let displayNum = ch.id || (allChannels.indexOf(ch) + 1);
 
-            div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
-            div.id = 'ch-' + idx;
-            div.innerHTML = `
+            html += `
+            <div class="ch-item ${isFocused} ${isSelected} ${isPlaying}" id="ch-${idx}" onclick="handleChannelClick(${idx})">
                 <div class="ch-num">${displayNum}</div>
                 <img class="ch-logo" src="${ch.logo}" loading="lazy" onerror="this.src='https://via.placeholder.com/40'">
                 <div class="ch-info">
                     <div class="ch-name">${ch.name}</div>
                     <div class="ch-epg">No information</div>
                 </div>
-            `;
-            div.onclick = () => { 
-                activeColumn = 'channels';
-                let oldIdx = selChannelIndex;
-                selChannelIndex = idx;
-                updateChannelFocus(oldIdx, idx);
-                playChannel(ch, idx); 
-                toggleMenu(false); 
-            };
-            fragment.appendChild(div);
-        });
+            </div>`;
+        }
         
-        list.appendChild(fragment);
+        list.innerHTML = html;
+        
         requestAnimationFrame(() => {
             scrollToItem('ch-' + selChannelIndex);
         });
@@ -366,6 +394,7 @@
 
     function playChannel(ch, indexInFiltered) {
         if (!ch) return;
+        let oldPlaying = currentPlayingChannel; // هەلگرتنا کەناڵێ کەڤن بۆ لابرنا ڕەنگێ کەسک
         currentPlayingChannel = ch;
         playGroupIndex = selGroupIndex;
         playChannelIndex = indexInFiltered;
@@ -379,8 +408,7 @@
 
         showInfoBar(ch);
         if(isMenuOpen) {
-            // نویكرنه‌ڤه‌یا لیستا كه‌ناڵان دا كو نیشانا "playing" بگۆڕیت
-            renderChannels(); 
+            updatePlayingState(oldPlaying, ch); // ل جهێ renderChannels یێ گران، تەنێ ڕەنگی دگۆڕیت
         }
 
         const loader = document.getElementById('loader');
