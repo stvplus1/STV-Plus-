@@ -2,19 +2,13 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="#080212">
 
-    <!-- 1. پلەیەرێ ئەندرۆیدێ ل پشتەڤە -->
-    <com.google.android.exoplayer2.ui.PlayerView
-        android:id="@+id/player_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- 2. وێبڤیو ل پێشیێ یە ب باکگراوەندێ شەفاف -->
+    <!-- تەنێ وێبڤیو (WebView) دێ مینیت بۆ نیشاندانا بەرنامەیێ تە یێ HTML -->
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/transparent" />
+        android:scrollbars="none" />
 
 </RelativeLayout>
