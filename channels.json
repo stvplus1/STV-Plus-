@@ -324,39 +324,193 @@
     "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/Mbc4.m3u8"
   },
   {
-    "id": 186,
+    "id": 178,
     "name": "MBC Action",
     "group": "عەرەبی",
     "logo": "https://files.cdn-files-a.com/uploads/278563/400_69f20f0be4732.png",
     "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/MbcAction.m3u8"
   },
   {
-    "id": 196,
+    "id": 179,
     "name": "Shahid VIP 1",
     "group": "عەرەبی",
     "logo": "https://files.cdn-files-a.com/uploads/278563/800_6926ebc5af40f.png",
     "url": "https://raw.githubusercontent.com/stvplus1/Arabic/refs/heads/main/Shahid1.m3u8"
   },
   {
-    "id": 1000,
+    "id": 180,
     "name": "KTV Ethraa (1080p)",
     "group": "عەرەبی",
     "logo": "https://i.imgur.com/hqEbc49.png",
     "url": "https://kwtethta.cdn.mangomolo.com/eth/smil:eth.stream.smil/chunklist.m3u8"
   },
   {
-    "id": 1001,
+    "id": 181,
     "name": "KTV News (1080p)",
     "group": "عەرەبی",
     "logo": "https://i.imgur.com/erZ0Ol1.png",
     "url": "https://kwtkbta.cdn.mangomolo.com/kb/smil:kb.stream.smil/chunklist.m3u8"
   },
   {
-    "id": 1003,
+    "id": 182,
     "name": "Kurdsat (1080p)",
     "group": "عەرەبی",
     "logo": "https://i.imgur.com/UAbSwYA.png",
     "url": "https://hlspackager.akamaized.net/live/DB/KURDSAT_HD/HLS/KURDSAT_HD.m3u8"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  {
+    "id": 199,
+    "name": "Kanal D",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/tr/archive/4/4e/20240406161353%21Kanal_D.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/KanalD.m3u8"
+  },
+  {
+    "id": 200,
+    "name": "Kanal D Drama",
+    "group": "تورکی",
+    "logo": "https://kanalddrama.com/images/logo.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/KanalDDrama.m3u8"
+  },
+  {
+    "id": 201,
+    "name": "Kanal D Ro",
+    "group": "تورکی",
+    "logo": "https://static.wikia.nocookie.net/tvfanon6528/images/3/36/Kanal_D_%282019-.n.v.%2C_versija_Luduzija%29.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/KanalDRo.m3u8"
+  },
+  {
+    "id": 202,
+    "name": "Star Tv",
+    "group": "تورکی",
+    "logo": "https://itv224234.tmp.tivibu.com.tr:6430/images/poster/20250801838418.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Star.m3u8"
+  },
+  {
+    "id": 203,
+    "name": "Show TV",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Logo_of_Show_TV.png",
+    "url": "https://ciner.daioncdn.net/showtv/showtv.m3u8?ce=3&app=4bc856ef-4c68-4a94-bc87-37dfaaa66558"
+  },
+  {
+    "id": 204,
+    "name": "Beyaz Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/tr/8/8d/Beyaz_TV_logo.jpeg",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Beyaz.m3u8"
+  },
+  {
+    "id": 205,
+    "name": "Now Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/NOW_Haber_Logo.png/500px-NOW_Haber_Logo.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Now.m3u8"
+  },
+  {
+    "id": 206,
+    "name": "A Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Atv_logo_2010.svg/330px-Atv_logo_2010.svg.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Atv.m3u8"
+  },
+  {
+    "id": 207,
+    "name": "Tv 360",
+    "group": "تورکی",
+    "logo": "https://canlitv.com/kanal/logo/15.jpg",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/360.m3u8"
+  },
+  {
+    "id": 208,
+    "name": "Kana 7 Tv",
+    "group": "تورکی",
+    "logo": "https://cdn.kanal7.com/kanal7/wp-content/themes/kanal7/v2/images/kanal7-logo.svg",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Kanal7.m3u8"
+  },
+  {
+    "id": 209,
+    "name": "Kanal 8 Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/tr/6/68/Tv8_Yeni_Logo.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Kanal8.m3u8"
+  },
+  {
+    "id": 210,
+    "name": "Teve 2",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/d/df/TV2_logo_2026.svg/1280px-TV2_logo_2026.svg.png",
+    "url": "https://raw.githubusercontent.com/stvplus1/Turkish/refs/heads/main/Teve2.m3u8"
+  },
+  {
+    "id": 211,
+    "name": "N Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/b/b5/NTV_logo.png",
+    "url": "http://dygvideo.dygdigital.com/live/hls/ntv4puhu?m3u8"
+  },
+  {
+    "id": 215,
+    "name": "TRT Muzik",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/TRT_M%C3%BCzik.svg/3840px-TRT_M%C3%BCzik.svg.png",
+    "url": "https://tv-trtmuzik.medya.trt.com.tr/master.m3u8"
+  },
+  {
+    "id": 219,
+    "name": "24",
+    "group": "تورکی",
+    "logo": "https://i.ibb.co/PhwYjQ7/24tv.png",
+    "url": "https://turkmedya-live.ercdn.net/tv24/tv24.m3u8"
+  },
+  {
+    "id": 222,
+    "name": "Minikago cocuk ",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/8/8a/MinikaGO.png",
+    "url": "https://rnttwmjcin.turknet.ercdn.net/lcpmvefbyo/minikago_cocuk/minikago_cocuk.m3u8"
+  },
+  {
+    "id": 232,
+    "name": "CNN TÜRK",
+    "group": "تورکی",
+    "logo": "https://i.ibb.co/JqWCczW/cnnturk1.png",
+    "url": "https://b.fulltvizle.com/cnn/playlist.m3u8"
+  },
+  {
+    "id": 242,
+    "name": "HABER TÜRK",
+    "group": "تورکی",
+    "logo": "https://i.ibb.co/wdwm0fn/haberturk.png",
+    "url": "https://ciner-live.daioncdn.net/haberturktv/haberturktv.m3u8"
+  },
+  {
+    "id": 276,
+    "name": "A2 Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/tr/e/e8/A2_logosu.jpg",
+    "url": "https://rnttwmjcin.turknet.ercdn.net/lcpmvefbyo/a2tv/a2tv.m3u8"
+  },
+  {
+    "id": 278,
+    "name": "Ictimai Tv",
+    "group": "تورکی",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/3/34/%C4%B0ctimai_TV_%282019-2020%29.png",
+    "url": "https://raw.githubusercontent.com/UzunMuhalefet/streams/main/myvideo-az/ictimai-tv.m3u8"
   }
 ]
+
 
