@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace 'com.yourname.stvplus' // ناڤێ پاکێجا خۆ لێرە دابنێ (وەک یێ بەرێ)
-    compileSdk 33 // ل گۆرەی خەلەتیا تە، تو ڤێرشنا 33 بکار دێنی
+    namespace 'com.stvplus.player'
+    compileSdk 34
 
     defaultConfig {
-        applicationId "com.yourname.stvplus" // ناڤێ پاکێجا خۆ لێرە ژی دابنێ
+        applicationId "com.stvplus.player"
         minSdk 21
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
     }
@@ -20,12 +20,20 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
-    
-    // زێدەکرنا ExoPlayer بۆ لێدانا کەناڵ و فلیمان ب خێرایی
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // کتێبخانەیا ExoPlayer بۆ کەناڵێن ئاسایی و کەناڵێن پاراستی (DRM)
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
+    
+    // کتێبخانەیا نوی یا VLC بۆ چارەسەریا دەنگێ Dolby و کەناڵێن بێدەنگ
+    implementation 'org.videolan.android:libvlc-all:3.5.1'
 }
