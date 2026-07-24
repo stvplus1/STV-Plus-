@@ -1,6 +1,7 @@
 package com.stvplus.player;
 
-import com.yourname.stvplus.R; // ناڤێ پاکێجا خۆ یێ دروست ل ڤێرە پشتڕاست بکە
+// پشتڕاست بە کو ناڤێ پاکێجا تە ل ڤێرە یێ دروستە
+import com.yourname.stvplus.R; 
 
 import android.content.Intent;
 import android.net.Uri;
@@ -26,6 +27,8 @@ import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.drm.LocalMediaDrmCallback;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
+// زێدەکرنا کتێبخانەیا دەنگی
+import com.google.android.exoplayer2.audio.AudioAttributes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // شاردنەڤەیا هێلێن ئەندرۆیدێ و سەعەتێ بۆ فول سکرین
         getWindow().getDecorView().setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_FULLSCREEN
             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -54,9 +58,22 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webView);
         playerView = findViewById(R.id.player_view);
 
-        player = new ExoPlayer.Builder(this).build();
+        // ==========================================
+        // ڕێکخستنا تایبەتمەندیێن دەنگی بۆ چارەسەرکرنا کێشەیا بێدەنگیێ
+        // ==========================================
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build();
+
+        // دروستکرنا ExoPlayer ب تایبەتمەندییا دەنگی
+        player = new ExoPlayer.Builder(this)
+                .setAudioAttributes(audioAttributes, true)
+                .build();
+                
         playerView.setPlayer(player);
 
+        // ڕێکخستنێن وێبڤیوو بۆ HTML
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -80,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    // گۆڕینا کلیلێن Hex بۆ بایت
+    // گۆڕینا کلیلێن Hex بۆ بایت (بۆ کەناڵێن پاراستی)
     public byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
@@ -91,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         return data;
     }
 
+    // پردا ناڤبەرا HTML و Android
     public class WebAppInterface {
         @JavascriptInterface
         public void playStream(String url, String type, String referer, String drmKeyId, String drmKey) {
@@ -116,9 +134,7 @@ public class MainActivity extends AppCompatActivity {
                         builder.setMimeType(MimeTypes.APPLICATION_MPD);
                     }
                     
-                    // ==========================================
-                    // ئەڤەیە چارەسەریا سەرەکی بۆ Starz Play ب ڕێکا LocalMediaDrmCallback
-                    // ==========================================
+                    // سیستەمێ ClearKey DRM بۆ کەناڵێن وەکو Starz Play
                     if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
                         try {
                             byte[] kidBytes = hexStringToByteArray(drmKeyId);
@@ -129,14 +145,12 @@ public class MainActivity extends AppCompatActivity {
                             
                             String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + kB64 + "\",\"kid\":\"" + kidB64 + "\"}],\"type\":\"temporary\"}";
                             
-                            // دروستکرنا مۆڵەتا لۆکاڵی بێی ئینتەرنێت
                             LocalMediaDrmCallback drmCallback = new LocalMediaDrmCallback(clearKeyJson.getBytes());
                             
                             DefaultDrmSessionManager drmSessionManager = new DefaultDrmSessionManager.Builder()
                                     .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
                                     .build(drmCallback);
 
-                            // گرێدانا سیستەمێ پاراستنێ ب ڤیدیۆیێ ڤە
                             mediaSourceFactory.setDrmSessionManagerProvider(mediaItem -> drmSessionManager);
                             builder.setDrmConfiguration(new MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID).build());
                             
