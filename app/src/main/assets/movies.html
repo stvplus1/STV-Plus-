@@ -6,7 +6,6 @@
     <title>STv+ TiviMate Pro Plus</title>
     
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.1/shaka-player.compiled.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <style>
@@ -151,9 +150,8 @@
     let playChannelIndex = -1;
     let currentPlayingChannel = null;
 
-    let uiTimer, loadTimer, reconnectTimer, numTimer;
+    let uiTimer, reconnectTimer, numTimer, menuAutoCloseTimer;
     let typedNumber = "";
-    window.shakaPlayer = null;
     let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
 
     async function initApp() {
@@ -219,6 +217,7 @@
                 updateMenuClasses();
                 renderGroups(); 
                 renderChannels();
+                resetMenuTimer();
             };
             list.appendChild(div);
         });
@@ -265,7 +264,7 @@
 
     function scrollToItem(id) {
         const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+        if (el) { el.scrollIntoView({ block: 'center' }); }
     }
 
     function showInfoBar(ch) {
@@ -281,6 +280,15 @@
         uiTimer = setTimeout(() => {
             if (!isMenuOpen) bar.classList.remove('show');
         }, 5000); 
+    }
+
+    function resetMenuTimer() {
+        clearTimeout(menuAutoCloseTimer);
+        if (isMenuOpen) {
+            menuAutoCloseTimer = setTimeout(() => {
+                toggleMenu(false);
+            }, 10000); 
+        }
     }
 
     function toggleMenu(force, withGroups = false) {
@@ -299,8 +307,10 @@
             
             renderGroups();
             renderChannels();
+            resetMenuTimer(); 
         } else {
             updateMenuClasses();
+            clearTimeout(menuAutoCloseTimer);
             showInfoBar(currentPlayingChannel); 
         }
     }
@@ -335,69 +345,25 @@
         loader.style.display = 'block';
         clearTimeout(reconnectTimer);
 
-        if (window.shakaPlayer) {
-            window.shakaPlayer.destroy();
-            window.shakaPlayer = null;
-        }
-
-        // 🌟 گۆڕانکارییا مەزن ل ڤێرەیە:
-        // ئەگەر کەناڵ کلیلێن DRM هەبوون (وەکو Starz Play) دێ ب Shaka لێدەت
-        if (ch.drmKeyId && ch.drmKey) {
-            videoContainer.style.display = 'block'; 
-            
-            if (window.AndroidPlayer) {
-                window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); // ڕاگرتنا ExoPlayer
-            }
-            
-            shaka.polyfill.installAll();
-            window.shakaPlayer = new shaka.Player(video);
-
-            window.shakaPlayer.getNetworkingEngine().registerRequestFilter(function(type, request) {
-                if (ch.referer && ch.referer !== "") {
-                    request.headers['Referer'] = ch.referer;
-                }
-            });
-
-            window.shakaPlayer.configure({ 
-                drm: { 
-                    clearKeys: { 
-                        [ch.drmKeyId]: ch.drmKey 
-                    } 
-                } 
-            });
-            
-            window.shakaPlayer.load(ch.url).then(() => {
-                video.play(); 
-                loader.style.display = 'none';
-            }).catch(e => {
-                console.error("کێشە د لێدانا Shaka دا چێبوو", e);
-                loader.style.display = 'none';
-                reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
-            });
-            
-        } else {
-            // 🌟 ئەگەر کلیل نەبوون (هەمی کەناڵێن دی، چ MPD بن چ HLS وەکو Kurdmax)، دێ ڕاستەوخۆ ب ExoPlayer لێدەت!
+        if (window.AndroidPlayer) {
             videoContainer.style.display = 'none'; 
+            video.pause();
+            video.removeAttribute('src'); 
+            video.load(); 
             
-            if (window.AndroidPlayer) {
-                window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", "", "");
-                setTimeout(() => { loader.style.display = 'none'; }, 1000);
-            } else {
-                // ئەڤە تەنێ بۆ دەمێ تاقیکرنێ یە ل سەر کۆمپیوتەری
-                videoContainer.style.display = 'block';
-                if (Hls.isSupported() && (!ch.type || ch.type === 'hls')) {
-                    const hls = new Hls(); hls.loadSource(ch.url); hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                    hls.on(Hls.Events.ERROR, (event, data) => {
-                        if (data.fatal) {
-                            reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
-                        }
-                    });
-                } else { 
-                    video.src = ch.url; video.play(); 
-                }
-                setTimeout(() => { loader.style.display = 'none'; }, 1500);
+            // هەمی کەناڵ ڕاستەوخۆ دێ چنە بۆ ExoPlayer بێی جیاوازی!
+            window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
+            setTimeout(() => { loader.style.display = 'none'; }, 2500); 
+        } else {
+            // ئەڤە تەنێ بۆ ئەگەر ل سەر کۆمپیوتەرێ تاقی بکەی
+            videoContainer.style.display = 'block';
+            if (Hls.isSupported() && (!ch.type || ch.type === 'hls')) {
+                const hls = new Hls(); hls.loadSource(ch.url); hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else { 
+                video.src = ch.url; video.play(); 
             }
+            setTimeout(() => { loader.style.display = 'none'; }, 1500);
         }
     }
 
@@ -408,6 +374,7 @@
         const ind = document.getElementById('num-indicator');
         ind.innerText = typedNumber;
         ind.style.display = 'block';
+        resetMenuTimer(); 
         
         numTimer = setTimeout(() => {
             let targetId = parseInt(typedNumber);
@@ -435,6 +402,8 @@
     document.addEventListener('keydown', (e) => {
         const key = e.keyCode;
         const keyChar = e.key;
+        
+        resetMenuTimer();
         
         if (/^\d$/.test(keyChar)) {
             handleNumberInput(keyChar);
@@ -505,7 +474,7 @@
                     break;
                 case 37: 
                 case 13: 
-                    toggleMenu(true, false); break;
+                    toggleMenu(true, false); break; 
                 case 39: 
                     showInfoBar(currentPlayingChannel); break;
             }
