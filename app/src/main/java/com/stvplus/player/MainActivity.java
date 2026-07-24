@@ -1,7 +1,6 @@
 package com.stvplus.player;
 
-// پشتڕاست بە ناڤێ پاکێجا تە ل ڤێرە یێ دروستە
-import com.yourname.stvplus.R; 
+import com.yourname.stvplus.R; // ناڤێ پاکێجا خۆ یێ دروست ل ڤێرە پشتڕاست بکە
 
 import android.content.Intent;
 import android.net.Uri;
@@ -24,6 +23,9 @@ import com.google.android.exoplayer2.upstream.DefaultDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.ui.PlayerView;
+import com.google.android.exoplayer2.drm.LocalMediaDrmCallback;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
+import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    // کۆنڤێرتکرنا کلیلێن DRM بۆ فۆرماتێ دروست
+    // گۆڕینا کلیلێن Hex بۆ بایت
     public byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
@@ -105,17 +107,18 @@ public class MainActivity extends AppCompatActivity {
                         httpFactory.setDefaultRequestProperties(headers);
                     }
                     
-                    // بەکارهێنانا DefaultDataSource دا کو پشتیوانیا فایلێن ناوخۆیی و داتا بکەت
                     DefaultDataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(MainActivity.this, httpFactory);
+                    DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory);
                     
                     MediaItem.Builder builder = new MediaItem.Builder().setUri(url);
                     
-                    // دەستنیشانکرنا جۆرێ MPD بۆ کەناڵێن پاراستی
                     if (url.contains(".mpd") || (type != null && type.toLowerCase().contains("dash"))) {
                         builder.setMimeType(MimeTypes.APPLICATION_MPD);
                     }
                     
-                    // کاراکرنا سیستەمێ ClearKey DRM ڕاستەوخۆ د ناو ExoPlayer دا
+                    // ==========================================
+                    // ئەڤەیە چارەسەریا سەرەکی بۆ Starz Play ب ڕێکا LocalMediaDrmCallback
+                    // ==========================================
                     if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
                         try {
                             byte[] kidBytes = hexStringToByteArray(drmKeyId);
@@ -124,20 +127,25 @@ public class MainActivity extends AppCompatActivity {
                             String kidB64 = Base64.encodeToString(kidBytes, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
                             String kB64 = Base64.encodeToString(kBytes, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
                             
-                            // دروستکرنا فایلا مۆڵەتا DRM
                             String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + kB64 + "\",\"kid\":\"" + kidB64 + "\"}],\"type\":\"temporary\"}";
-                            String licenseUrl = "data:application/json;base64," + Base64.encodeToString(clearKeyJson.getBytes(), Base64.NO_WRAP);
                             
-                            MediaItem.DrmConfiguration drmConfig = new MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
-                                    .setLicenseUri(licenseUrl)
-                                    .build();
-                            builder.setDrmConfiguration(drmConfig);
+                            // دروستکرنا مۆڵەتا لۆکاڵی بێی ئینتەرنێت
+                            LocalMediaDrmCallback drmCallback = new LocalMediaDrmCallback(clearKeyJson.getBytes());
+                            
+                            DefaultDrmSessionManager drmSessionManager = new DefaultDrmSessionManager.Builder()
+                                    .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
+                                    .build(drmCallback);
+
+                            // گرێدانا سیستەمێ پاراستنێ ب ڤیدیۆیێ ڤە
+                            mediaSourceFactory.setDrmSessionManagerProvider(mediaItem -> drmSessionManager);
+                            builder.setDrmConfiguration(new MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID).build());
+                            
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                     
-                    MediaSource mediaSource = new DefaultMediaSourceFactory(dataSourceFactory).createMediaSource(builder.build());
+                    MediaSource mediaSource = mediaSourceFactory.createMediaSource(builder.build());
                     player.setMediaSource(mediaSource);
                     player.prepare();
                     player.play();
