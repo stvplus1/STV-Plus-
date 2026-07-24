@@ -1,6 +1,6 @@
 package com.stvplus.player;
 
-import com.yourname.stvplus.R; // ناڤێ پاکێجا خۆ پشتڕاست بکە
+import com.stvplus.player.R; // ناڤێ پاکێجا خۆ پشتڕاست بکە
 
 import android.content.Intent;
 import android.net.Uri;
