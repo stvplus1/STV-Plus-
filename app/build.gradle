@@ -24,6 +24,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    // ئەڤەیە چارەسەریا سەرەکی بۆ کێشەیا ڕامێ (OOM) یا گیت‌هەبی
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
 }
 
 dependencies {
@@ -31,6 +38,9 @@ dependencies {
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    // تەنێ ExoPlayer بەسە بۆ هەمی کەناڵان (زۆر خێرا و سڤک)
+    // پلەیەرێ ExoPlayer
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
+    
+    // پلەیەرێ VLC
+    implementation 'org.videolan.android:libvlc-all:3.5.1'
 }
