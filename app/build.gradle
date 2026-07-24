@@ -12,6 +12,15 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        // ==========================================
+        // چارەسەرییا بنەڕەتی بۆ گیت‌هەبی:
+        // تەنێ فایلێن VLC یێن تایبەت ب مۆبایل و تیڤیێ بهێلە.
+        // ئەڤە دێ قەبارێ پڕۆژەی زۆر بچووک کەت و کێشەیا ڕامێ نامینیت!
+        // ==========================================
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     buildTypes {
@@ -26,10 +35,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    // ==========================================
-    // ئەڤەیە چارەسەرییا سیحری بۆ کێشەیا OutOfMemory
-    // سیستەم ئیتر هەول نادەت فایلێن VLC بچووک بکەت
-    // ==========================================
     packagingOptions {
         doNotStrip "**/*.so"
     }
@@ -43,6 +48,6 @@ dependencies {
     // پلەیەرێ ExoPlayer
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
     
-    // پلەیەرێ VLC بێی کێشەیا گیت‌هەبی
+    // پلەیەرێ VLC
     implementation 'org.videolan.android:libvlc-all:3.5.1'
 }
