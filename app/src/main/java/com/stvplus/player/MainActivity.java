@@ -1,7 +1,5 @@
 package com.stvplus.player;
 
-import com.stvplus.player.R; // ناڤێ پاکێجا خۆ پشتڕاست بکە
-
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -69,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         vlcVideoLayout = findViewById(R.id.vlc_video_layout);
 
-        // ئامادەکرنا ExoPlayer
+        // ئامادەکرنا ExoPlayer دگەل چارەسەریا دەنگی
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
@@ -79,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         playerView.setPlayer(exoPlayer);
 
-        // ئامادەکرنا VLC
+        // ئامادەکرنا VLC Player
         ArrayList<String> options = new ArrayList<>();
         options.add("--aout=opensles");
         options.add("--audio-time-stretch");
@@ -151,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                             builder.setMimeType(MimeTypes.APPLICATION_MPD);
                         }
                         
+                        // سیستەمێ ClearKey DRM
                         if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
                             try {
                                 byte[] kidBytes = hexStringToByteArray(drmKeyId);
