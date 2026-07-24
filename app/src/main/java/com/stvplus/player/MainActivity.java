@@ -13,9 +13,17 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
 
+// کتێبخانەیێن نوی یێن ExoPlayer بۆ پشتیوانیکرنا MPD و Headers
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.ui.PlayerView;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // ئەڤ کۆدە دێ شاشەیێ کەتە فول سکرین (شاردنەڤەیا سەعەت و پاتریێ)
+        // شاردنەڤەیا سەعەت و پاتریێ (Full Screen)
         getWindow().getDecorView().setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_FULLSCREEN
             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -73,8 +81,33 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    MediaItem mediaItem = MediaItem.fromUri(url);
-                    player.setMediaItem(mediaItem);
+                    // ١. دروستکرنا User-Agent و Referer
+                    DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory();
+                    
+                    // دانانا User-Agent (وەکو کرۆمێ کۆمپیوتەری خۆ نیشان ددەت دا بلۆک نەبیت)
+                    dataSourceFactory.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36");
+
+                    // دانانا Referer ئەگەر د ناو کۆدێ HTML دا هەبیت
+                    if (referer != null && !referer.isEmpty()) {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("Referer", referer);
+                        headers.put("Origin", referer);
+                        dataSourceFactory.setDefaultRequestProperties(headers);
+                    }
+
+                    // ٢. ئامادەکرنا لینکێ ڤیدیۆیێ و ناسیارکرنا جۆرێ MPD
+                    MediaItem.Builder builder = new MediaItem.Builder().setUri(url);
+                    
+                    if (url.contains(".mpd") || (type != null && type.toLowerCase().contains("mpd"))) {
+                        builder.setMimeType(MimeTypes.APPLICATION_MPD);
+                    }
+
+                    MediaItem mediaItem = builder.build();
+
+                    // ٣. تێکەلکرنا لینکێ ب هێدەران ڤە و کارپێکرنا پلەیەری
+                    MediaSource mediaSource = new DefaultMediaSourceFactory(dataSourceFactory).createMediaSource(mediaItem);
+
+                    player.setMediaSource(mediaSource);
                     player.prepare();
                     player.play();
                 }
