@@ -86,10 +86,6 @@
         .ch-item {
             display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
             transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02);
-            /* تایبەتمەندیێن نوی بۆ خێراترین لۆدکرن ل سەر ئامێرێن لاواز */
-            content-visibility: auto; 
-            contain-intrinsic-size: 61px;
-            will-change: background, border-color;
         }
         .ch-item.selected { background: var(--tivi-grey); }
         .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
@@ -127,7 +123,7 @@
 
     <div id="tivi-menu">
         <div id="col-groups">
-            <div class="col-header">گروپێن کەناڵان</div>
+            <div class="col-header">گرووپەکان</div>
             <div class="list-container" id="groups-list"></div>
         </div>
         <div id="col-channels">
@@ -143,7 +139,7 @@
     const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
     
     let allChannels = [];
-    let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "زاروک", "وەرزشی", "OSN"];
+    let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
     let filteredChannels = [];
     
     let isMenuOpen = false;
@@ -156,39 +152,10 @@
     let playChannelIndex = -1;
     let currentPlayingChannel = null;
 
-    let uiTimer, reconnectTimer, numTimer, stallTimer;
+    let uiTimer, loadTimer, reconnectTimer, numTimer;
     let typedNumber = "";
     window.shakaPlayer = null;
     let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
-
-    const videoElement = document.getElementById('main-video');
-
-    function triggerAutoReconnect() {
-        if (reconnectTimer) return;
-        
-        document.getElementById('loader').style.display = 'block';
-        reconnectTimer = setTimeout(() => {
-            reconnectTimer = null;
-            if (currentPlayingChannel) {
-                playChannel(currentPlayingChannel, playChannelIndex);
-            }
-        }, 3000);
-    }
-
-    videoElement.onerror = () => triggerAutoReconnect();
-    videoElement.onstalled = () => triggerAutoReconnect();
-    videoElement.onwaiting = () => {
-        clearTimeout(stallTimer);
-        stallTimer = setTimeout(() => {
-            triggerAutoReconnect();
-        }, 5000);
-    };
-    videoElement.onplaying = () => {
-        clearTimeout(stallTimer);
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-        document.getElementById('loader').style.display = 'none';
-    };
 
     async function initApp() {
         try {
@@ -198,6 +165,7 @@
             updateFilteredChannels();
             
             if (allChannels.length > 0) {
+                // پشکنینا کەنالێ دوماهیێ (Memory) ب شێوەیەکێ دروستتر
                 let lastChId = localStorage.getItem('last_channel_id');
                 let targetIdx = 0;
                 
@@ -259,62 +227,43 @@
         scrollToItem('grp-' + selGroupIndex);
     }
 
-    function updateChannelFocus(oldIdx, newIdx) {
-        let oldEl = document.getElementById('ch-' + oldIdx);
-        if (oldEl) oldEl.classList.remove('focused');
-        
-        let newEl = document.getElementById('ch-' + newIdx);
-        if (newEl) newEl.classList.add('focused');
-        
-        scrollToItem('ch-' + newIdx);
-    }
-
-    // فەنکشنێ کلیککرنێ یێ گشتی بۆ خێراترکرنێ
-    window.handleChannelClick = function(idx) {
-        activeColumn = 'channels';
-        let oldIdx = selChannelIndex;
-        selChannelIndex = idx;
-        updateChannelFocus(oldIdx, idx);
-        playChannel(filteredChannels[idx], idx); 
-        toggleMenu(false); 
-    };
-
-    // فەنکشنێ renderChannels ب شێوازێ String Builder
     function renderChannels() {
         const list = document.getElementById('channels-list');
+        list.innerHTML = '';
         
         if (filteredChannels.length === 0) {
             list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
             return;
         }
 
-        let html = "";
-        let len = filteredChannels.length;
-        
-        for(let idx = 0; idx < len; idx++) {
-            let ch = filteredChannels[idx];
-            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex) ? 'focused' : '';
-            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex) ? 'selected' : '';
-            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id) ? 'playing' : '';
+        filteredChannels.forEach((ch, idx) => {
+            let div = document.createElement('div');
+            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex);
+            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
+            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
             
+            // ئەگەر id نەبیت، ڕیزبەندیێ نیشان بدە
             let displayNum = ch.id || (allChannels.indexOf(ch) + 1);
 
-            html += `
-            <div class="ch-item ${isFocused} ${isSelected} ${isPlaying}" id="ch-${idx}" onclick="handleChannelClick(${idx})">
+            div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
+            div.id = 'ch-' + idx;
+            div.innerHTML = `
                 <div class="ch-num">${displayNum}</div>
-                <img class="ch-logo" src="${ch.logo}" loading="lazy" onerror="this.src='https://via.placeholder.com/40'">
+                <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
                 <div class="ch-info">
                     <div class="ch-name">${ch.name}</div>
                     <div class="ch-epg">No information</div>
                 </div>
-            </div>`;
-        }
-        
-        list.innerHTML = html;
-        
-        requestAnimationFrame(() => {
-            scrollToItem('ch-' + selChannelIndex);
+            `;
+            div.onclick = () => { 
+                activeColumn = 'channels';
+                selChannelIndex = idx;
+                playChannel(ch, idx); 
+                toggleMenu(false); 
+            };
+            list.appendChild(div);
         });
+        scrollToItem('ch-' + selChannelIndex);
     }
 
     function scrollToItem(id) {
@@ -376,22 +325,19 @@
         playGroupIndex = selGroupIndex;
         playChannelIndex = indexInFiltered;
         
-        clearTimeout(reconnectTimer);
-        clearTimeout(stallTimer);
-        reconnectTimer = null;
-
+        // تۆمارکرنا ID یێ کەنالێ ل ناو Memory بۆ ڤەگەڕانێ
         let channelIdToSave = ch.id ? ch.id : (allChannels.indexOf(ch) + 1);
         localStorage.setItem('last_channel_id', channelIdToSave);
 
         showInfoBar(ch);
-        if(isMenuOpen) {
-            renderChannels(); 
-        }
+        if(isMenuOpen) renderChannels(); 
 
         const loader = document.getElementById('loader');
         const videoContainer = document.getElementById('videoContainer');
+        const video = document.getElementById('main-video');
 
         loader.style.display = 'block';
+        clearTimeout(reconnectTimer);
 
         if (window.shakaPlayer) {
             window.shakaPlayer.destroy();
@@ -405,20 +351,14 @@
             } else {
                 videoContainer.style.display = 'block';
                 if (Hls.isSupported()) {
-                    const hls = new Hls(); 
-                    hls.loadSource(ch.url); 
-                    hls.attachMedia(videoElement);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => videoElement.play().catch(() => triggerAutoReconnect()));
-                    
+                    const hls = new Hls(); hls.loadSource(ch.url); hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
                     hls.on(Hls.Events.ERROR, (event, data) => {
                         if (data.fatal) {
-                            triggerAutoReconnect();
+                            reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
                         }
                     });
-                } else { 
-                    videoElement.src = ch.url; 
-                    videoElement.play().catch(() => triggerAutoReconnect()); 
-                }
+                } else { video.src = ch.url; video.play(); }
             }
             setTimeout(() => { loader.style.display = 'none'; }, 1500);
         } else {
@@ -427,23 +367,20 @@
                 window.AndroidPlayer.playStream("about:blank", "hls", "", "", ""); 
             }
             shaka.polyfill.installAll();
-            window.shakaPlayer = new shaka.Player(videoElement);
-            
-            window.shakaPlayer.addEventListener('error', () => triggerAutoReconnect());
-
+            window.shakaPlayer = new shaka.Player(video);
             if (ch.drmKeyId && ch.drmKey) {
                 window.shakaPlayer.configure({ drm: { clearKeys: { [ch.drmKeyId]: ch.drmKey } } });
             }
             window.shakaPlayer.load(ch.url).then(() => {
-                videoElement.play().catch(() => triggerAutoReconnect()); 
-                loader.style.display = 'none';
+                video.play(); loader.style.display = 'none';
             }).catch(e => {
                 loader.style.display = 'none';
-                triggerAutoReconnect();
+                reconnectTimer = setTimeout(() => { playChannel(ch, indexInFiltered); }, 3000);
             });
         }
     }
 
+    // گەڕان ب ڕێکا ژمارەیێن لێدایی ل سەر کۆنترۆلێ باشترکرن
     function handleNumberInput(digit) {
         clearTimeout(numTimer);
         typedNumber += digit;
@@ -457,10 +394,12 @@
             typedNumber = "";
             ind.style.display = 'none';
             
+            // گەڕان د ناڤ هەمی کەنالان دا ب ID یان ژمارەیا ڕیزبەندیێ
             let globalIdx = allChannels.findIndex((c, i) => (c.id ? c.id == targetId : (i + 1) == targetId));
             
             if (globalIdx !== -1) {
                 let foundCh = allChannels[globalIdx];
+                // ڤەگۆهاستنا گرووپێ گونجایی
                 selGroupIndex = groups.indexOf(foundCh.group) !== -1 ? groups.indexOf(foundCh.group) : 0;
                 updateFilteredChannels();
                 
@@ -501,35 +440,27 @@
             e.preventDefault();
             if (activeColumn === 'channels') {
                 switch(key) {
-                    case 38: // UP
-                        if (selChannelIndex > 0) {
-                            let oldIdx = selChannelIndex;
-                            selChannelIndex--;
-                            updateChannelFocus(oldIdx, selChannelIndex);
-                        }
-                        break;
-                    case 40: // DOWN
-                        if (selChannelIndex < filteredChannels.length - 1) {
-                            let oldIdx = selChannelIndex;
-                            selChannelIndex++;
-                            updateChannelFocus(oldIdx, selChannelIndex);
-                        }
-                        break;
-                    case 37:
+                    case 38: // سەرێ
+                        if (selChannelIndex > 0) selChannelIndex--;
+                        renderChannels(); break;
+                    case 40: // خوارێ
+                        if (selChannelIndex < filteredChannels.length - 1) selChannelIndex++;
+                        renderChannels(); break;
+                    case 37: // چەپ
                         showGroups = true; activeColumn = 'groups'; 
                         updateMenuClasses(); renderGroups(); renderChannels(); break;
-                    case 39:
+                    case 39: // ڕاست
                         toggleMenu(false); break;
-                    case 13:
+                    case 13: // OK
                         playChannel(filteredChannels[selChannelIndex], selChannelIndex); 
                         toggleMenu(false); break;
                 }
             } else if (activeColumn === 'groups') {
                 switch(key) {
-                    case 38:
+                    case 38: // سەرێ
                         if (selGroupIndex > 0) selGroupIndex--;
                         updateFilteredChannels(); renderGroups(); break;
-                    case 40:
+                    case 40: // خوارێ
                         if (selGroupIndex < groups.length - 1) selGroupIndex++;
                         updateFilteredChannels(); renderGroups(); break;
                     case 39: 
@@ -544,12 +475,13 @@
             if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
             
             switch(key) {
-                case 38: // UP -> کەناڵێ داهاتی
+                // پێچەوانەکرنا دوگمەیان
+                case 38: // UP (سەرێ) -> کەنالێ داهاتی (Next Channel) ب بەرەڤ سەرێ دچیت
                     if (playChannelIndex < filteredChannels.length - 1) {
                         playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
                     }
                     break;
-                case 40: // DOWN -> کەناڵێ پێشتر
+                case 40: // DOWN (خوارێ) -> کەنالێ پێشتر (Previous Channel) ب بەرەڤ خوارێ دچیت
                     if (playChannelIndex > 0) {
                         playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
                     }
