@@ -1,1 +1,587 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>STv+ TiviMate Pro Plus</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        :root { 
+            --tivi-blue: #0277bd; 
+            --tivi-grey: rgba(255, 255, 255, 0.15); 
+            --bg-dark: rgba(10, 15, 20, 0.50); 
+            --menu-bg: rgba(20, 25, 30, 0.95);
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        html, body { 
+            background: transparent !important; 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            overflow: hidden; 
+            touch-action: none; 
+            direction: ltr; 
+            width: 100%; height: 100%;
+        }
+        
+        #app-container { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+        
+        #video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: transparent; }
+        #videoContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1; display: none; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
+        
+        #loader { position: absolute; z-index: 50; display: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: var(--tivi-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #num-indicator {
+            position: absolute; top: 30px; left: 40px; background: rgba(2, 119, 189, 0.8); color: white;
+            padding: 8px 20px; border-radius: 8px; font-size: 28px; font-weight: bold; z-index: 3000; display: none;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+
+        #info-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 40px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            z-index: 100; opacity: 0; transition: opacity 0.3s; display: flex; align-items: flex-end; gap: 20px; pointer-events: none;
+        }
+        #info-bar.show { opacity: 1; }
+        .info-logo { width: 70px; height: 70px; object-fit: contain; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 8px; }
+        .info-details { flex: 1; }
+        .info-title { font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 15px; }
+        .info-num { color: #aaa; font-size: 24px; }
+        .info-epg { font-size: 16px; color: #00e676; margin-top: 5px; font-weight: bold; }
+
+        /* --- Main Menus (Groups & Channels) --- */
+        #tivi-menu {
+            position: absolute; top: 0; left: 0; height: 100%;
+            display: flex; flex-direction: row; z-index: 200;
+            transform: translateX(-100%); visibility: hidden;
+            transition: transform 0.25s ease-out, visibility 0s linear 0.25s;
+        }
+        #tivi-menu.open { transform: translateX(0); visibility: visible; transition: transform 0.25s ease-out, visibility 0s; }
+
+        #col-groups { 
+            width: 250px; height: 100%; background: var(--bg-dark);
+            border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;
+            margin-left: -250px; transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
+        #tivi-menu.show-groups #col-groups { margin-left: 0; }
+
+        .col-header { padding: 20px; font-size: 18px; font-weight: bold; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); }
+        .list-container { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 10px 0; }
+        .list-container::-webkit-scrollbar { display: none; }
+        
+        .group-item { padding: 15px 20px; font-size: 16px; color: #ccc; cursor: pointer; transition: 0.1s; display: flex; align-items: center; gap: 10px; border-left: 4px solid transparent; }
+        .group-item.selected { background: var(--tivi-grey); color: white; }
+        .group-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
+
+        #col-channels { 
+            width: 350px; height: 100%; background: var(--bg-dark);
+            display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
+        
+        .ch-item { display: flex; align-items: center; padding: 10px 15px; cursor: pointer; transition: 0.1s; border-left: 4px solid transparent; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .ch-item.selected { background: var(--tivi-grey); }
+        .ch-item.focused { background: var(--tivi-blue); color: white; border-left-color: white; }
+        .ch-item.playing .ch-name { color: #00e676; } 
+        
+        .ch-num { width: 40px; font-size: 14px; color: #ccc; font-weight: bold; text-align: center; }
+        .ch-logo { width: 40px; height: 40px; object-fit: contain; margin: 0 15px; }
+        .ch-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .ch-name { font-size: 16px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+        /* --- نوی: دیزاینا لیستا ڕاستێ (Side Menus) --- */
+        .side-panel {
+            position: absolute; right: 0; top: 0; width: 320px; height: 100%;
+            background: var(--menu-bg); z-index: 500; display: flex; flex-direction: column;
+            transform: translateX(100%); transition: transform 0.25s ease-out;
+            border-left: 1px solid rgba(255,255,255,0.1); box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .side-panel.open { transform: translateX(0); }
+        
+        .side-item { padding: 18px 20px; font-size: 16px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; transition: 0.1s; border-right: 4px solid transparent; }
+        .side-item.focused { background: var(--tivi-blue); border-right-color: white; }
+        
+        .side-label { font-size: 14px; color: #aaa; margin-bottom: 4px; }
+        .side-item.focused .side-label { color: #ddd; }
+        .side-value { font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.85); color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 1000; opacity: 0; transition: 0.2s; backdrop-filter: blur(5px); }
+        #toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="video-layer">
+        <div id="videoContainer">
+            <video id="main-video" playsinline autoplay crossorigin="anonymous"></video>
+        </div>
+        <div id="loader"><div class="spinner"></div></div>
+    </div>
+
+    <div id="num-indicator"></div>
+
+    <div id="info-bar">
+        <img class="info-logo" id="ib-logo" src="" alt="">
+        <div class="info-details">
+            <div class="info-title"><span class="info-num" id="ib-num">1</span> <span id="ib-name">کەناڵ</span></div>
+            <div class="info-epg">No information</div>
+        </div>
+    </div>
+
+    <div id="tivi-menu">
+        <div id="col-groups">
+            <div class="col-header">گرووپەکان</div>
+            <div class="list-container" id="groups-list"></div>
+        </div>
+        <div id="col-channels">
+            <div class="col-header" id="current-group-title">هەمی</div>
+            <div class="list-container" id="channels-list"></div>
+        </div>
+    </div>
+    
+    <div id="side-action-menu" class="side-panel">
+        <div class="col-header" id="action-ch-name">هەڵبژاردنەکان</div>
+        <div class="list-container" id="action-list">
+            <div class="side-item" id="act-0">Add to fav</div>
+            <div class="side-item" id="act-1">Edit channel</div>
+        </div>
+    </div>
+
+    <div id="side-edit-menu" class="side-panel">
+        <div class="col-header">Edit channel</div>
+        <div class="list-container" id="edit-list">
+            <div class="side-item" id="edit-0">
+                <div class="side-label">Title</div>
+                <div class="side-value" id="edit-val-title">...</div>
+            </div>
+            <div class="side-item" id="edit-1">
+                <div class="side-label">Number</div>
+                <div class="side-value" id="edit-val-num">...</div>
+            </div>
+            <div class="side-item" id="edit-2">
+                <div class="side-label">Logotype</div>
+                <div class="side-value" id="edit-val-logo">...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+</div>
+
+<script>
+    const CHANNELS_URL = "https://raw.githubusercontent.com/stvplus1/STV-Plus-/refs/heads/main/channels.json";
+    
+    let allChannels = [];
+    let groups = ["هەمی", "دڵخواز", "کوردستان", "تورکی", "عەرەبی", "ئاینی", "منداڵان", "وەرزشی", "OSN"];
+    let filteredChannels = [];
+    
+    let isMenuOpen = false;
+    let showGroups = false;
+    let activeColumn = 'channels'; // 'groups', 'channels', 'actionMenu', 'editMenu'
+    
+    let selGroupIndex = 0;
+    let selChannelIndex = 0;
+    let selActionIndex = 0;
+    let selEditIndex = 0;
+    
+    let playGroupIndex = 0;
+    let playChannelIndex = -1;
+    let currentPlayingChannel = null;
+    let channelBeingEdited = null;
+
+    let uiTimer, numTimer, menuAutoCloseTimer;
+    let typedNumber = "";
+    
+    // داتایێن لۆکاڵ بۆ دەستکارییێن کەناڵان
+    let favChannels = JSON.parse(localStorage.getItem('favChannels')) || [];
+    let customChannelsData = JSON.parse(localStorage.getItem('customChannelsData')) || {};
+
+    async function initApp() {
+        try {
+            let res = await fetch(CHANNELS_URL + '?t=' + Date.now());
+            let fetchedChannels = await res.json();
+            
+            // بکارئینانا گۆڕانکارییێن لۆکاڵ (وەک ناڤ و ژمارە)
+            allChannels = fetchedChannels.map((ch, idx) => {
+                let defaultId = ch.id || (idx + 1);
+                if (customChannelsData[defaultId]) {
+                    return { ...ch, id: defaultId, ...customChannelsData[defaultId] };
+                }
+                return { ...ch, id: defaultId };
+            });
+            
+            updateFilteredChannels();
+            
+            if (allChannels.length > 0) {
+                let lastChId = localStorage.getItem('last_channel_id');
+                let targetIdx = 0;
+                if (lastChId) {
+                    let foundIdx = filteredChannels.findIndex(c => c.id == lastChId);
+                    if (foundIdx !== -1) targetIdx = foundIdx;
+                }
+                selChannelIndex = targetIdx;
+                playChannel(filteredChannels[targetIdx], targetIdx);
+            }
+        } catch (e) {
+            showToast("کێشە د هێنانا کەنالان دا هەیە");
+        }
+    }
+
+    function updateFilteredChannels() {
+        let gName = groups[selGroupIndex];
+        document.getElementById('current-group-title').innerText = gName;
+        
+        if (gName === "هەمی") filteredChannels = allChannels;
+        else if (gName === "دڵخواز") filteredChannels = allChannels.filter(c => favChannels.includes(c.id));
+        else filteredChannels = allChannels.filter(c => c.group === gName);
+        
+        if(!isMenuOpen) {
+            selChannelIndex = filteredChannels.findIndex(c => currentPlayingChannel && c.id === currentPlayingChannel.id);
+            if(selChannelIndex === -1) selChannelIndex = 0;
+        } else if (activeColumn === 'groups') {
+            selChannelIndex = 0;
+        }
+    }
+
+    function renderGroups() {
+        const list = document.getElementById('groups-list');
+        list.innerHTML = '';
+        groups.forEach((g, idx) => {
+            let div = document.createElement('div');
+            let isFocused = (activeColumn === 'groups' && idx === selGroupIndex);
+            let isSelected = (activeColumn === 'channels' && idx === selGroupIndex);
+            div.className = `group-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
+            div.id = 'grp-' + idx;
+            div.innerHTML = `<span>${g}</span>`;
+            div.onclick = () => { selGroupIndex = idx; showGroups = false; activeColumn = 'channels'; updateFilteredChannels(); updateMenuClasses(); renderGroups(); renderChannels(); resetMenuTimer(); };
+            list.appendChild(div);
+        });
+        scrollToItem('grp-' + selGroupIndex);
+    }
+
+    function renderChannels() {
+        const list = document.getElementById('channels-list');
+        list.innerHTML = '';
+        if (filteredChannels.length === 0) {
+            list.innerHTML = `<div style="padding: 20px; color: #888; text-align: center;">هیچ کەناڵێک نییە</div>`;
+            return;
+        }
+        filteredChannels.forEach((ch, idx) => {
+            let div = document.createElement('div');
+            let isFocused = (activeColumn === 'channels' && idx === selChannelIndex);
+            let isSelected = (activeColumn === 'groups' && idx === selChannelIndex);
+            let isPlaying = (currentPlayingChannel && currentPlayingChannel.id === ch.id);
+            
+            div.className = `ch-item ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`;
+            div.id = 'ch-' + idx;
+            div.innerHTML = `
+                <div class="ch-num">${ch.id}</div>
+                <img class="ch-logo" src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="ch-info">
+                    <div class="ch-name">${ch.name}</div>
+                </div>
+            `;
+            div.onclick = () => { activeColumn = 'channels'; selChannelIndex = idx; playChannel(ch, idx); toggleMenu(false); };
+            list.appendChild(div);
+        });
+        scrollToItem('ch-' + selChannelIndex);
+    }
+
+    function scrollToItem(id) {
+        const el = document.getElementById(id);
+        if (el) { el.scrollIntoView({ block: 'center' }); }
+    }
+
+    function showInfoBar(ch) {
+        if(ch) {
+            document.getElementById('ib-num').innerText = ch.id;
+            document.getElementById('ib-name').innerText = ch.name;
+            document.getElementById('ib-logo').src = ch.logo;
+        }
+        const bar = document.getElementById('info-bar');
+        bar.classList.add('show');
+        clearTimeout(uiTimer);
+        uiTimer = setTimeout(() => { if (!isMenuOpen) bar.classList.remove('show'); }, 5000); 
+    }
+
+    function resetMenuTimer() {
+        clearTimeout(menuAutoCloseTimer);
+        if (isMenuOpen && activeColumn !== 'actionMenu' && activeColumn !== 'editMenu') {
+            menuAutoCloseTimer = setTimeout(() => toggleMenu(false), 15000); 
+        }
+    }
+
+    function toggleMenu(force, withGroups = false) {
+        isMenuOpen = force !== undefined ? force : !isMenuOpen;
+        const infoBar = document.getElementById('info-bar');
+        if (isMenuOpen) {
+            showGroups = withGroups;
+            activeColumn = showGroups ? 'groups' : 'channels';
+            updateMenuClasses();
+            infoBar.classList.remove('show');
+            closeSidePanels();
+            
+            selGroupIndex = playGroupIndex;
+            updateFilteredChannels();
+            selChannelIndex = playChannelIndex !== -1 ? playChannelIndex : 0;
+            renderGroups(); renderChannels(); resetMenuTimer(); 
+        } else {
+            updateMenuClasses(); closeSidePanels();
+            clearTimeout(menuAutoCloseTimer); showInfoBar(currentPlayingChannel); 
+        }
+    }
+
+    function updateMenuClasses() {
+        const menu = document.getElementById('tivi-menu');
+        if (isMenuOpen) {
+            menu.classList.add('open');
+            if (showGroups) menu.classList.add('show-groups'); else menu.classList.remove('show-groups');
+        } else menu.classList.remove('open');
+    }
+
+    // --- Side Menus Logic (Action & Edit) ---
+    function openActionMenu() {
+        if(filteredChannels.length === 0) return;
+        channelBeingEdited = filteredChannels[selChannelIndex];
+        activeColumn = 'actionMenu';
+        selActionIndex = 0;
+        clearTimeout(menuAutoCloseTimer);
+        
+        document.getElementById('action-ch-name').innerText = channelBeingEdited.name;
+        document.getElementById('act-0').innerText = favChannels.includes(channelBeingEdited.id) ? "Remove from fav" : "Add to fav";
+        
+        document.getElementById('side-action-menu').classList.add('open');
+        renderActionMenu();
+        renderChannels(); // Update focus lost state
+    }
+
+    function renderActionMenu() {
+        document.getElementById('act-0').className = `side-item ${selActionIndex === 0 ? 'focused' : ''}`;
+        document.getElementById('act-1').className = `side-item ${selActionIndex === 1 ? 'focused' : ''}`;
+    }
+
+    function executeActionMenu() {
+        if(selActionIndex === 0) {
+            // Toggle Fav
+            let id = channelBeingEdited.id;
+            if(favChannels.includes(id)) {
+                favChannels = favChannels.filter(f => f !== id);
+                showToast("ژ لیستا دڵخوازان هاتە لادان");
+            } else {
+                favChannels.push(id);
+                showToast("زێدەکریا لیستا دڵخوازان");
+            }
+            localStorage.setItem('favChannels', JSON.stringify(favChannels));
+            activeColumn = 'channels';
+            document.getElementById('side-action-menu').classList.remove('open');
+            updateFilteredChannels(); renderChannels(); resetMenuTimer();
+        } else if (selActionIndex === 1) {
+            openEditMenu();
+        }
+    }
+
+    function openEditMenu() {
+        activeColumn = 'editMenu';
+        selEditIndex = 0;
+        document.getElementById('side-action-menu').classList.remove('open');
+        document.getElementById('side-edit-menu').classList.add('open');
+        
+        document.getElementById('edit-val-title').innerText = channelBeingEdited.name;
+        document.getElementById('edit-val-num').innerText = channelBeingEdited.id;
+        document.getElementById('edit-val-logo').innerText = channelBeingEdited.logo;
+        renderEditMenu();
+    }
+
+    function renderEditMenu() {
+        document.getElementById('edit-0').className = `side-item ${selEditIndex === 0 ? 'focused' : ''}`;
+        document.getElementById('edit-1').className = `side-item ${selEditIndex === 1 ? 'focused' : ''}`;
+        document.getElementById('edit-2').className = `side-item ${selEditIndex === 2 ? 'focused' : ''}`;
+    }
+
+    function executeEditMenu() {
+        let defaultId = channelBeingEdited.id;
+        if (!customChannelsData[defaultId]) customChannelsData[defaultId] = {};
+        
+        if (selEditIndex === 0) {
+            let newName = prompt("گۆڕینی ناڤێ کەناڵی:", channelBeingEdited.name);
+            if (newName) {
+                customChannelsData[defaultId].name = newName;
+                channelBeingEdited.name = newName;
+            }
+        } else if (selEditIndex === 1) {
+            let newNum = prompt("گۆڕینی ژمارەیا کەناڵی:", channelBeingEdited.id);
+            if (newNum && !isNaN(newNum)) {
+                customChannelsData[defaultId].id = parseInt(newNum);
+                channelBeingEdited.id = parseInt(newNum);
+            }
+        } else if (selEditIndex === 2) {
+            let newLogo = prompt("گۆڕینی لۆگۆیا کەناڵی (URL):", channelBeingEdited.logo);
+            if (newLogo) {
+                customChannelsData[defaultId].logo = newLogo;
+                channelBeingEdited.logo = newLogo;
+            }
+        }
+        
+        localStorage.setItem('customChannelsData', JSON.stringify(customChannelsData));
+        openEditMenu(); // Refresh edit view
+        
+        // Refresh underlying lists
+        let gIdx = allChannels.findIndex(c => c.url === channelBeingEdited.url);
+        if(gIdx !== -1) allChannels[gIdx] = channelBeingEdited;
+        updateFilteredChannels();
+        renderChannels();
+    }
+
+    function closeSidePanels() {
+        document.getElementById('side-action-menu').classList.remove('open');
+        document.getElementById('side-edit-menu').classList.remove('open');
+    }
+
+    // --- Player Logic ---
+    function playChannel(ch, indexInFiltered) {
+        if (!ch) return;
+        currentPlayingChannel = ch; playGroupIndex = selGroupIndex; playChannelIndex = indexInFiltered;
+        localStorage.setItem('last_channel_id', ch.id);
+        showInfoBar(ch); if(isMenuOpen && activeColumn === 'channels') renderChannels(); 
+
+        const loader = document.getElementById('loader'); const videoContainer = document.getElementById('videoContainer'); const video = document.getElementById('main-video');
+        loader.style.display = 'block';
+
+        if (window.AndroidPlayer) {
+            videoContainer.style.display = 'none'; video.pause(); video.removeAttribute('src'); video.load(); 
+            window.AndroidPlayer.playStream(ch.url, ch.type || 'hls', ch.referer || "", ch.drmKeyId || "", ch.drmKey || "");
+            setTimeout(() => { loader.style.display = 'none'; }, 2500); 
+        } else {
+            videoContainer.style.display = 'block';
+            if (Hls.isSupported() && (!ch.type || ch.type === 'hls')) {
+                const hls = new Hls(); hls.loadSource(ch.url); hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else { video.src = ch.url; video.play(); }
+            setTimeout(() => { loader.style.display = 'none'; }, 1500);
+        }
+    }
+
+    // --- Key Down & Long Press Logic ---
+    let okPressTimer = null;
+    let isOkLongPressed = false;
+
+    document.addEventListener('keydown', (e) => {
+        const key = e.keyCode;
+        const keyChar = e.key;
+        
+        if (/^\d$/.test(keyChar) && activeColumn !== 'editMenu') {
+            clearTimeout(numTimer); typedNumber += keyChar;
+            const ind = document.getElementById('num-indicator');
+            ind.innerText = typedNumber; ind.style.display = 'block'; resetMenuTimer(); 
+            numTimer = setTimeout(() => {
+                let targetId = parseInt(typedNumber); typedNumber = ""; ind.style.display = 'none';
+                let globalIdx = allChannels.findIndex(c => c.id == targetId);
+                if (globalIdx !== -1) {
+                    let foundCh = allChannels[globalIdx];
+                    selGroupIndex = groups.indexOf(foundCh.group) !== -1 ? groups.indexOf(foundCh.group) : 0;
+                    updateFilteredChannels();
+                    let filteredIdx = filteredChannels.findIndex(c => c.id == targetId);
+                    if (filteredIdx !== -1) { selChannelIndex = filteredIdx; playChannel(foundCh, filteredIdx); }
+                } else showToast("کەناڵ نەهاتە دیتن");
+            }, 1200);
+            e.preventDefault(); return;
+        }
+
+        // Dedicated Menu Key (Android TV Menu Button)
+        if (key === 82 || keyChar === 'm' || keyChar === 'M') {
+            if (isMenuOpen && activeColumn === 'channels') {
+                openActionMenu();
+            }
+            e.preventDefault(); return;
+        }
+
+        // Long Press OK (Enter) detection
+        if (key === 13 && isMenuOpen && activeColumn === 'channels') {
+            if (!okPressTimer && !isOkLongPressed) {
+                okPressTimer = setTimeout(() => {
+                    isOkLongPressed = true;
+                    openActionMenu();
+                }, 600); // 600ms long press
+            }
+            e.preventDefault(); return;
+        }
+
+        if ([8, 27, 10009, 461].includes(key)) { // Back Button
+            if (isMenuOpen) {
+                if (activeColumn === 'editMenu') { activeColumn = 'actionMenu'; document.getElementById('side-edit-menu').classList.remove('open'); document.getElementById('side-action-menu').classList.add('open'); }
+                else if (activeColumn === 'actionMenu') { activeColumn = 'channels'; document.getElementById('side-action-menu').classList.remove('open'); renderChannels(); resetMenuTimer(); }
+                else if (showGroups) { showGroups = false; activeColumn = 'channels'; updateMenuClasses(); renderGroups(); renderChannels(); } 
+                else toggleMenu(false);
+                e.preventDefault(); return; 
+            }
+        }
+
+        if (isMenuOpen) {
+            e.preventDefault();
+            if (activeColumn === 'actionMenu') {
+                if(key === 38 && selActionIndex > 0) { selActionIndex--; renderActionMenu(); }
+                else if(key === 40 && selActionIndex < 1) { selActionIndex++; renderActionMenu(); }
+                else if(key === 39) { activeColumn = 'channels'; document.getElementById('side-action-menu').classList.remove('open'); renderChannels(); resetMenuTimer(); }
+                else if(key === 13) { executeActionMenu(); }
+            }
+            else if (activeColumn === 'editMenu') {
+                if(key === 38 && selEditIndex > 0) { selEditIndex--; renderEditMenu(); }
+                else if(key === 40 && selEditIndex < 2) { selEditIndex++; renderEditMenu(); }
+                else if(key === 39) { activeColumn = 'actionMenu'; document.getElementById('side-edit-menu').classList.remove('open'); document.getElementById('side-action-menu').classList.add('open'); }
+                else if(key === 13) { executeEditMenu(); }
+            }
+            else if (activeColumn === 'channels') {
+                if(key === 38 && selChannelIndex > 0) { selChannelIndex--; renderChannels(); resetMenuTimer(); }
+                else if(key === 40 && selChannelIndex < filteredChannels.length - 1) { selChannelIndex++; renderChannels(); resetMenuTimer(); }
+                else if(key === 37) { showGroups = true; activeColumn = 'groups'; updateMenuClasses(); renderGroups(); renderChannels(); resetMenuTimer(); }
+                else if(key === 39) { toggleMenu(false); }
+                // 13 (OK) handled in keyup for normal press
+            } else if (activeColumn === 'groups') {
+                if(key === 38 && selGroupIndex > 0) { selGroupIndex--; updateFilteredChannels(); renderGroups(); resetMenuTimer(); }
+                else if(key === 40 && selGroupIndex < groups.length - 1) { selGroupIndex++; updateFilteredChannels(); renderGroups(); resetMenuTimer(); }
+                else if(key === 39 || key === 13) { showGroups = false; activeColumn = 'channels'; updateMenuClasses(); renderGroups(); renderChannels(); resetMenuTimer(); }
+                else if(key === 37) { toggleMenu(false); }
+            }
+        } else {
+            if ([38, 40, 37, 39, 13].includes(key)) e.preventDefault();
+            if(key === 38 && playChannelIndex < filteredChannels.length - 1) playChannel(filteredChannels[playChannelIndex + 1], playChannelIndex + 1);
+            else if(key === 40 && playChannelIndex > 0) playChannel(filteredChannels[playChannelIndex - 1], playChannelIndex - 1);
+            else if(key === 37 || key === 13) toggleMenu(true, false); 
+            else if(key === 39) showInfoBar(currentPlayingChannel);
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.keyCode === 13 && isMenuOpen && activeColumn === 'channels') {
+            if (okPressTimer) { clearTimeout(okPressTimer); okPressTimer = null; }
+            if (!isOkLongPressed) {
+                // Short press - Play Channel
+                playChannel(filteredChannels[selChannelIndex], selChannelIndex); 
+                toggleMenu(false);
+            }
+            isOkLongPressed = false;
+            e.preventDefault();
+        }
+    });
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    initApp();
+</script>
+</body>
+</html>
 
