@@ -20,16 +20,18 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    // ئەڤەیە چارەسەریا سەرەکی بۆ کێشەیا ڕامێ (OOM) یا گیت‌هەبی
+    // ==========================================
+    // ئەڤەیە چارەسەرییا سیحری بۆ کێشەیا OutOfMemory
+    // سیستەم ئیتر هەول نادەت فایلێن VLC بچووک بکەت
+    // ==========================================
     packagingOptions {
-        jniLibs {
-            useLegacyPackaging true
-        }
+        doNotStrip "**/*.so"
     }
 }
 
@@ -41,6 +43,6 @@ dependencies {
     // پلەیەرێ ExoPlayer
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
     
-    // پلەیەرێ VLC
+    // پلەیەرێ VLC بێی کێشەیا گیت‌هەبی
     implementation 'org.videolan.android:libvlc-all:3.5.1'
 }
