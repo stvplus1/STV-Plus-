@@ -12,6 +12,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
 
+// ExoPlayer Imports
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
@@ -26,14 +27,25 @@ import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 
+// VLC Imports
+import org.videolan.libvlc.LibVLC;
+import org.videolan.libvlc.Media;
+import org.videolan.libvlc.MediaPlayer;
+import org.videolan.libvlc.util.VLCVideoLayout;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
-    private ExoPlayer player;
+    private ExoPlayer exoPlayer;
     private PlayerView playerView;
+    
+    private LibVLC libVLC;
+    private MediaPlayer vlcMediaPlayer;
+    private VLCVideoLayout vlcVideoLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,17 +64,24 @@ public class MainActivity extends AppCompatActivity {
 
         webView = findViewById(R.id.webView);
         playerView = findViewById(R.id.player_view);
+        vlcVideoLayout = findViewById(R.id.vlc_video_layout);
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build();
-
-        player = new ExoPlayer.Builder(this)
+        exoPlayer = new ExoPlayer.Builder(this)
                 .setAudioAttributes(audioAttributes, true)
                 .build();
-                
-        playerView.setPlayer(player);
+        playerView.setPlayer(exoPlayer);
+
+        ArrayList<String> options = new ArrayList<>();
+        options.add("--aout=opensles");
+        options.add("--audio-time-stretch");
+        options.add("-vvv");
+        libVLC = new LibVLC(this, options);
+        vlcMediaPlayer = new MediaPlayer(libVLC);
+        vlcMediaPlayer.attachViews(vlcVideoLayout, null, false, false);
 
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -72,18 +91,7 @@ public class MainActivity extends AppCompatActivity {
         
         webView.setBackgroundColor(0x00000000); 
         webView.setWebViewClient(new WebViewClient());
-
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidPlayer");
-
-        webView.setDownloadListener(new DownloadListener() {
-            @Override
-            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse(url));
-                startActivity(intent);
-            }
-        });
-
         webView.loadUrl("file:///android_asset/index.html");
     }
 
@@ -91,8 +99,7 @@ public class MainActivity extends AppCompatActivity {
         int len = s.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                                 + Character.digit(s.charAt(i+1), 16));
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i+1), 16));
         }
         return data;
     }
@@ -103,53 +110,63 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    DefaultHttpDataSource.Factory httpFactory = new DefaultHttpDataSource.Factory();
-                    httpFactory.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36");
-                    
-                    if (referer != null && !referer.isEmpty()) {
-                        Map<String, String> headers = new HashMap<>();
-                        headers.put("Referer", referer);
-                        headers.put("Origin", referer);
-                        httpFactory.setDefaultRequestProperties(headers);
-                    }
-                    
-                    DefaultDataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(MainActivity.this, httpFactory);
-                    DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory);
-                    
-                    MediaItem.Builder builder = new MediaItem.Builder().setUri(url);
-                    
-                    if (url.contains(".mpd") || (type != null && type.toLowerCase().contains("dash"))) {
-                        builder.setMimeType(MimeTypes.APPLICATION_MPD);
-                    }
-                    
-                    if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
-                        try {
-                            byte[] kidBytes = hexStringToByteArray(drmKeyId);
-                            byte[] kBytes = hexStringToByteArray(drmKey);
-                            
-                            String kidB64 = Base64.encodeToString(kidBytes, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
-                            String kB64 = Base64.encodeToString(kBytes, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
-                            
-                            String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + kB64 + "\",\"kid\":\"" + kidB64 + "\"}],\"type\":\"temporary\"}";
-                            
-                            LocalMediaDrmCallback drmCallback = new LocalMediaDrmCallback(clearKeyJson.getBytes());
-                            
-                            DefaultDrmSessionManager drmSessionManager = new DefaultDrmSessionManager.Builder()
-                                    .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
-                                    .build(drmCallback);
-
-                            mediaSourceFactory.setDrmSessionManagerProvider(mediaItem -> drmSessionManager);
-                            builder.setDrmConfiguration(new MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID).build());
-                            
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    if (type != null && type.toLowerCase().equals("vlc")) {
+                        exoPlayer.stop();
+                        playerView.setVisibility(View.GONE);
+                        vlcVideoLayout.setVisibility(View.VISIBLE);
+                        
+                        vlcMediaPlayer.stop();
+                        Media media = new Media(libVLC, Uri.parse(url));
+                        media.setHWDecoderEnabled(true, false);
+                        vlcMediaPlayer.setMedia(media);
+                        media.release();
+                        vlcMediaPlayer.play();
+                    } 
+                    else {
+                        vlcMediaPlayer.stop();
+                        vlcVideoLayout.setVisibility(View.GONE);
+                        playerView.setVisibility(View.VISIBLE);
+                        
+                        DefaultHttpDataSource.Factory httpFactory = new DefaultHttpDataSource.Factory();
+                        httpFactory.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                        if (referer != null && !referer.isEmpty()) {
+                            Map<String, String> headers = new HashMap<>();
+                            headers.put("Referer", referer);
+                            headers.put("Origin", referer);
+                            httpFactory.setDefaultRequestProperties(headers);
                         }
+                        
+                        DefaultDataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(MainActivity.this, httpFactory);
+                        DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory);
+                        MediaItem.Builder builder = new MediaItem.Builder().setUri(url);
+                        
+                        if (url.contains(".mpd") || (type != null && type.toLowerCase().contains("dash"))) {
+                            builder.setMimeType(MimeTypes.APPLICATION_MPD);
+                        }
+                        
+                        if (drmKeyId != null && !drmKeyId.isEmpty() && drmKey != null && !drmKey.isEmpty()) {
+                            try {
+                                byte[] kidBytes = hexStringToByteArray(drmKeyId);
+                                byte[] kBytes = hexStringToByteArray(drmKey);
+                                String kidB64 = Base64.encodeToString(kidBytes, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
+                                String kB64 = Base64.encodeToString(kBytes, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
+                                String clearKeyJson = "{\"keys\":[{\"kty\":\"oct\",\"k\":\"" + kB64 + "\",\"kid\":\"" + kidB64 + "\"}],\"type\":\"temporary\"}";
+                                LocalMediaDrmCallback drmCallback = new LocalMediaDrmCallback(clearKeyJson.getBytes());
+                                DefaultDrmSessionManager drmSessionManager = new DefaultDrmSessionManager.Builder()
+                                        .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
+                                        .build(drmCallback);
+                                mediaSourceFactory.setDrmSessionManagerProvider(mediaItem -> drmSessionManager);
+                                builder.setDrmConfiguration(new MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID).build());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        
+                        MediaSource mediaSource = mediaSourceFactory.createMediaSource(builder.build());
+                        exoPlayer.setMediaSource(mediaSource);
+                        exoPlayer.prepare();
+                        exoPlayer.play();
                     }
-                    
-                    MediaSource mediaSource = mediaSourceFactory.createMediaSource(builder.build());
-                    player.setMediaSource(mediaSource);
-                    player.prepare();
-                    player.play();
                 }
             });
         }
@@ -159,9 +176,8 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (player != null) {
-                        player.stop();
-                    }
+                    if (exoPlayer != null) exoPlayer.stop();
+                    if (vlcMediaPlayer != null) vlcMediaPlayer.stop();
                 }
             });
         }
@@ -179,8 +195,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (player != null) {
-            player.release();
+        if (exoPlayer != null) exoPlayer.release();
+        if (vlcMediaPlayer != null) {
+            vlcMediaPlayer.release();
+            libVLC.release();
         }
     }
 }
